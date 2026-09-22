@@ -288,7 +288,7 @@ interleaves single-image T2I steps into the multi-view loop (data prepared in
 codec keeps an optional `cotrain_t2i` block of its own (`COTRAIN_T2I=1`) for
 RGB-decoder text alignment.
 
-### Latent statistics (required after codec, before Flow/DiT)
+#### Latent statistics (required after codec, before Flow/DiT)
 
 After Stage 1 codec training, compute the per-channel mean/std used by Stage 2
 to standardize codec latents (Eq. 15):
