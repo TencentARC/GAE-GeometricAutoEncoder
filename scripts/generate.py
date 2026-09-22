@@ -25,6 +25,8 @@ import cv2
 import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 def parse_args() -> tuple[argparse.Namespace, list[str]]:

@@ -34,7 +34,7 @@ T2I_IG_SCALE=2.0
 EXTRA=()
 
 die() { echo "[run_demo] error: $*" >&2; exit 1; }
-usage() { sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+usage() { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

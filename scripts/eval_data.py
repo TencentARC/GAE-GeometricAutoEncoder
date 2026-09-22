@@ -1321,7 +1321,7 @@ def main():
     vae_ckpt_path = str(cfg.get("vae_checkpoint"))
     vae = GAECodec(**vae_cfg).to(device).eval()
     vae_ckpt = torch.load(vae_ckpt_path, map_location="cpu")
-    vae_sd = vae_ckpt.get("ema_vae", vae_ckpt.get("vae", vae_ckpt))
+    vae_sd = vae_ckpt.get("ema_vae", vae_ckpt.get("codec", vae_ckpt.get("vae", vae_ckpt)))
     vae.load_state_dict(vae_sd, strict=False)
     has_rgb = vae.rgb_head is not None
     print(f"  latent_dim={vae.latent_dim}  RGB head: {'OK' if has_rgb else 'no'}")

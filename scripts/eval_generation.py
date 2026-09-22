@@ -328,6 +328,17 @@ def _fast_load(path, **kwargs):
     return torch.load(path, **kwargs)
 
 
+def _unwrap_codec_state(ckpt):
+    """Release ckpts use ``codec``; research dumps use ``ema_vae`` / ``vae``."""
+    if not isinstance(ckpt, dict):
+        return ckpt
+    for key in ("ema_codec", "codec", "ema_vae", "vae", "model"):
+        inner = ckpt.get(key)
+        if isinstance(inner, dict) and any(torch.is_tensor(v) for v in inner.values()):
+            return inner
+    return ckpt
+
+
 def _eval_cache_base() -> str:
     """Local scratch root for weight caches (callers append '/_eval_cache').
 
@@ -3207,7 +3218,7 @@ def main():
         vae_ckpt_path = str(args.vae_ckpt or cfg.get("vae_checkpoint"))
         print(f"  vae ckpt: {vae_ckpt_path}")
         vae_ckpt = _fast_load(vae_ckpt_path, map_location="cpu")
-        vae_sd = vae_ckpt.get("ema_vae", vae_ckpt.get("vae", vae_ckpt))
+        vae_sd = _unwrap_codec_state(vae_ckpt)
 
         # rgb_head: training yaml strips rgb_decoder; auto-detect spatial depth and
         # optional temporal blocks from ckpt keys before building the head.

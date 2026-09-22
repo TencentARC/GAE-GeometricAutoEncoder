@@ -105,7 +105,7 @@ pip install -e .            # installs the `gae` API and the src/ modules
 ```
 
 Python 3.10–3.12, torch 2.5.1. The DA3-GIANT backbone is pulled from the Hub
-on first use.
+on first use. `python3.13` is not supported (`pip install -e .` will refuse it).
 
 `pip install -e .` puts both `gae` and the research packages (`stage1`,
 `stage2`, `utils`, ...) on the import path, so **no `PYTHONPATH` setup is
