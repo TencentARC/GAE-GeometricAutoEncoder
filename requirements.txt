@@ -40,3 +40,6 @@ numpy
 pyarrow
 orjson
 webdataset
+
+# Hugging Face Space UI
+gradio>=6.15.1,<7

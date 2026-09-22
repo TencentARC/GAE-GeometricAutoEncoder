@@ -1,3 +1,25 @@
+---
+title: GAE Geometry-Native World Generation
+emoji: 🌍
+colorFrom: indigo
+colorTo: blue
+sdk: gradio
+sdk_version: 6.15.1
+app_file: app.py
+python_version: 3.10.13
+startup_duration_timeout: 1h
+pinned: false
+license: other
+short_description: Camera-controlled video and text-to-image generation with GAE
+models:
+  - TencentARC/GAE-D64-1B
+tags:
+  - image-to-video
+  - text-to-image
+  - camera-control
+  - 3d-consistency
+---
+
 # GAE: Learning a Geometry-Native Latent Space for 3D-Consistent World Generation
 
 <p align="center">
@@ -178,6 +200,21 @@ the `t2i` co-train branch). Guidance defaults to internal guidance (`--guidance 
 [`examples/t2i_prompts.txt`](examples/t2i_prompts.txt) and [`examples/t2i_samples/`](examples/t2i_samples).
 
 ---
+
+## 🤗 Hugging Face Space
+
+This repository includes a Gradio Space app in [`app.py`](app.py). It has two tabs:
+
+- **Image → camera-controlled video**: uses the images, prompts, and matching camera poses in `examples/scenes/`; uploaded images use the selectable synthetic trajectories.
+- **Text → image**: uses the prompts in `examples/t2i_prompts.txt` and decodes depth plus a point cloud alongside the generated image.
+
+To deploy it, create a new Gradio Space and upload/push this repository. The Space downloads `TencentARC/GAE-D64-1B` on the first request. A GPU-backed Space is recommended; start with 17 views and 25 sampling steps, then increase to 81 views for the full camera-controlled clip.
+
+The local equivalent is:
+
+```bash
+python app.py
+```
 
 ## 🐍 Python API
 
