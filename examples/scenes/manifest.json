@@ -56,5 +56,179 @@
     "license_note": "Pexels License (free commercial use); OK to distribute \u2014 verify the specific clip.",
     "source_scene": "pexels_017",
     "prompt_file": "autumn_waterfall.txt"
+  },
+  "bedroom": {
+    "prompt": "a bedroom with a bed and chair in it; a bedroom with hardwood floors and a ceiling fan; a small room with a bed and chair in it; a bedroom with wood floors and a ceiling fan",
+    "image": "bedroom.jpg",
+    "poses": "bedroom_poses.npz",
+    "gt_video": "bedroom_gt.mp4",
+    "num_frames": 81,
+    "image_size_hw": [
+      378,
+      672
+    ],
+    "fps": 12,
+    "cond_num": 1,
+    "convention": "camera-to-world (OpenCV: x-right, y-down, z-forward)",
+    "K_frame0": [
+      326.2664,
+      323.7632,
+      335.7625,
+      188.7625
+    ],
+    "translation_span_xyz": [
+      0.057,
+      0.053,
+      0.974
+    ],
+    "source_dataset": "GAE release demo assets",
+    "license_note": "Public redistribution authorized by the release maintainer.",
+    "source_scene": "bedroom",
+    "prompt_file": "bedroom.txt"
+  },
+  "historic_hall": {
+    "prompt": "a spacious, well-lit room within a museum or gallery, featuring a variety of historical artifacts and artwork. The room is adorned with large tapestries depicting intricate scenes, hanging on the walls, and a prominent fireplace with a decorative mantel. A bed with a white cover is positioned in the center, surrounded by wooden furniture and a large window allowing natural light to flood the space. The ceiling is wooden, adding to the room's classic and elegant atmosphere. The floor is wooden, and the overall ambiance is serene and contemplative, inviting visitors to explore and appreciate the historical significance of the displayed items.",
+    "image": "historic_hall.jpg",
+    "poses": "historic_hall_poses.npz",
+    "gt_video": "historic_hall_gt.mp4",
+    "num_frames": 81,
+    "image_size_hw": [
+      378,
+      672
+    ],
+    "fps": 12,
+    "cond_num": 1,
+    "convention": "camera-to-world (OpenCV: x-right, y-down, z-forward)",
+    "K_frame0": [
+      303.4676,
+      306.9721,
+      335.85,
+      188.85
+    ],
+    "translation_span_xyz": [
+      3.511,
+      0.511,
+      8.586
+    ],
+    "source_dataset": "GAE release demo assets",
+    "license_note": "Public redistribution authorized by the release maintainer.",
+    "source_scene": "historic_hall",
+    "prompt_file": "historic_hall.txt"
+  },
+  "hillside_car": {
+    "prompt": "A gray sedan maneuvers through a semiarid landscape dotted with sparse vegetation, approaching a small settlement featuring simple buildings under a clear blue sky.; A car maneuvers through a sandy, rural area near a small village, navigating uneven terrain while the surrounding landscape remains static under clear skies.; A sleek, darkcolored sports car maneuvers through a sandy, rural landscape with sparse vegetation and simple structures, navigating around obstacles while the backdrop reveals distant mountains under a clear blue sky.; A blue sports car navigates through a sandy terrain, maneuvering between wooden posts and dense shrubs, with a backdrop of distant mountains and a clear sky.; A silver car is stationary near a bush in an outdoor setting with buildings, mountains, and a clear blue sky, while the surrounding vegetation appears affected by wind, creating a serene yet dynamic environment.; A silver sports car is partially obscured by overgrown vegetation while stationary on an urban street, surrounded by residential buildings, with subtle wind causing leaves to flutter.; A silver sedan is embedded in overgrown vegetation beside a street lined with residential buildings, under a clear blue sky, indicating a scene of abandonment or postapocalyptic desolation.; A stationary silver car is partially obscured by bushes on the right side of a quiet suburban street, while buildings and a mountain range form the backdrop under a clear blue sky.",
+    "image": "hillside_car.jpg",
+    "poses": "hillside_car_poses.npz",
+    "gt_video": "hillside_car_gt.mp4",
+    "num_frames": 81,
+    "image_size_hw": [
+      378,
+      672
+    ],
+    "fps": 12,
+    "cond_num": 1,
+    "convention": "camera-to-world (OpenCV: x-right, y-down, z-forward)",
+    "K_frame0": [
+      332.0692,
+      332.0692,
+      335.7625,
+      188.7625
+    ],
+    "translation_span_xyz": [
+      27.826,
+      5.393,
+      42.74
+    ],
+    "source_dataset": "GAE release demo assets",
+    "license_note": "Public redistribution authorized by the release maintainer.",
+    "source_scene": "hillside_car",
+    "prompt_file": "hillside_car.txt"
+  },
+  "city_street": {
+    "prompt": "A bustling urban street scene with a prominent building featuring a \"Sauna Members Only\" sign, surrounded by palm trees and a clear blue sky, suggesting a warm, sunny day.",
+    "image": "city_street.jpg",
+    "poses": "city_street_poses.npz",
+    "gt_video": "city_street_gt.mp4",
+    "num_frames": 81,
+    "image_size_hw": [
+      378,
+      672
+    ],
+    "fps": 12,
+    "cond_num": 1,
+    "convention": "camera-to-world (OpenCV: x-right, y-down, z-forward)",
+    "K_frame0": [
+      403.5202,
+      481.3171,
+      335.85,
+      188.85
+    ],
+    "translation_span_xyz": [
+      2.321,
+      0.541,
+      1.636
+    ],
+    "source_dataset": "GAE release demo assets",
+    "license_note": "Public redistribution authorized by the release maintainer.",
+    "source_scene": "city_street",
+    "prompt_file": "city_street.txt"
+  },
+  "office_desk": {
+    "prompt": "A cluttered home office space with a white desk, a black office chair, a computer monitor, a bookshelf filled with various items, a water bottle, a mug, and a roll of toilet paper. The scene is well-lit, likely by natural light, and the camera is positioned at a slight angle, capturing the entire desk area and part of the bookshelf.",
+    "image": "office_desk.jpg",
+    "poses": "office_desk_poses.npz",
+    "gt_video": "office_desk_gt.mp4",
+    "num_frames": 81,
+    "image_size_hw": [
+      378,
+      672
+    ],
+    "fps": 12,
+    "cond_num": 1,
+    "convention": "camera-to-world (OpenCV: x-right, y-down, z-forward)",
+    "K_frame0": [
+      670.9871,
+      672.5703,
+      336.1667,
+      189.1667
+    ],
+    "translation_span_xyz": [
+      0.486,
+      0.279,
+      0.151
+    ],
+    "source_dataset": "GAE release demo assets",
+    "license_note": "Public redistribution authorized by the release maintainer.",
+    "source_scene": "office_desk",
+    "prompt_file": "office_desk.txt"
+  },
+  "museum_gallery": {
+    "prompt": "The video sequence showcases a museum exhibit featuring a large, intricately designed mask with a prominent, elongated nose and expressive eyes. The mask is adorned with a long, fringed beard that cascades down its sides. It is displayed on a circular platform with a blue base, positioned against a backdrop of a large, detailed mural depicting a similar mask and other cultural symbols. The mural is mounted on a light blue wall, creating a striking contrast with the mask's vibrant colors. The exhibit space is well-lit, with overhead lights illuminating the scene and casting soft shadows. In the background, other artifacts and displays can be seen, indicating a rich collection of cultural heritage. The overall atmosphere is one of reverence and appreciation for the art and history on display.",
+    "image": "museum_gallery.jpg",
+    "poses": "museum_gallery_poses.npz",
+    "gt_video": "museum_gallery_gt.mp4",
+    "num_frames": 81,
+    "image_size_hw": [
+      378,
+      672
+    ],
+    "fps": 12,
+    "cond_num": 1,
+    "convention": "camera-to-world (OpenCV: x-right, y-down, z-forward)",
+    "K_frame0": [
+      398.295,
+      399.5619,
+      335.85,
+      188.85
+    ],
+    "translation_span_xyz": [
+      0.704,
+      0.224,
+      2.284
+    ],
+    "source_dataset": "GAE release demo assets",
+    "license_note": "Public redistribution authorized by the release maintainer.",
+    "source_scene": "museum_gallery",
+    "prompt_file": "museum_gallery.txt"
   }
 }

@@ -27,12 +27,6 @@ LICENSE
 .vscode/
 .DS_Store
 
-# GT clips and non-redistributable demo scenes
+# GT clips are regenerable from eval dumps and are not distributed.
 examples/scenes/*_gt.mp4
-examples/scenes/bedroom*
-examples/scenes/historic_hall*
-examples/scenes/hillside_car*
-examples/scenes/city_street*
-examples/scenes/office_desk*
-examples/scenes/museum_gallery*
 .write_test
