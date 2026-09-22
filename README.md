@@ -288,9 +288,19 @@ interleaves single-image T2I steps into the multi-view loop (data prepared in
 codec keeps an optional `cotrain_t2i` block of its own (`COTRAIN_T2I=1`) for
 RGB-decoder text alignment.
 
-Flow training reads `ckpts/latent_stats_gae_64.pt` (Eq. 15). Download it with
-`scripts/demo/download_checkpoints.py --subset codec`, or compute it for a custom
-codec — see **Latent statistics (required after codec, before Flow/DiT)** below.
+### Latent statistics (required after codec, before Flow/DiT)
+
+After Stage 1 codec training, compute the per-channel mean/std used by Stage 2
+to standardize codec latents (Eq. 15):
+
+```bash
+python scripts/train/compute_latent_stats.py \
+  --config configs/gae_64.yaml --codec-ckpt <trained_codec_checkpoint.pt> \
+  --num-batches 500 --output ckpts/latent_stats_gae_64.pt
+```
+
+Then start Stage 2 Flow/DiT. Its config reads `ckpts/latent_stats_gae_64.pt`;
+`--dataset` narrows the sampling distribution and `--full-cov` adds optional whitening.
 
 On network filesystems, run `python scripts/data/build_dataset_index.py --config
 configs/gae_64.yaml` once beforehand to pre-build the loader index caches so rank0
@@ -356,17 +366,6 @@ released flow weights are a stronger continued-training model these will not
 reproduce the paper numbers exactly — see [Results](#-results). One-click
 equivalent: `scripts/eval/run_eval.sh --size 64 --tasks gen,consistency,met3r,geometry`.
 
-### Latent statistics (required after codec, before Flow/DiT)
-
-```bash
-python scripts/train/compute_latent_stats.py \
-  --config configs/gae_64.yaml --codec-ckpt <trained_codec_checkpoint.pt> \
-  --num-batches 500 --output ckpts/latent_stats_gae_64.pt
-```
-
-This step must run after Stage 1 codec training and before Stage 2 Flow/DiT.
-The flow config reads `ckpts/latent_stats_gae_64.pt`; `--dataset` narrows the
-sampling distribution and `--full-cov` adds the optional whitening operator.
 
 
 ---
