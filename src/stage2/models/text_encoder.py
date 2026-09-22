@@ -68,7 +68,7 @@ class Qwen3TextEncoder(nn.Module):
         max_length: tokenizer pad/truncate length. RAEv2 uses 256; with that
             length, journeydb/long-caption captions that exceed 256 wpieces
             get truncated (rare but happens for long-caption split).
-        torch_dtype: ``torch.bfloat16`` recommended on H100/H200 — keeps
+        torch_dtype: ``torch.bfloat16`` recommended — keeps
             memory at ~1.2 GB and runs flash-attn paths.
     """
 

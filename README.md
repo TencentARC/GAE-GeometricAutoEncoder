@@ -104,9 +104,8 @@ pip install -e .            # installs the `gae` API and the src/ modules
 # or, for a pinned CUDA env:  pip install -r requirements.txt
 ```
 
-Verified with Python 3.10 (3.10-3.12 supported), torch 2.5.1 (CUDA 12.x) on an
-H200. The DA3-GIANT
-backbone is pulled from the Hub on first use.
+Python 3.10–3.12, torch 2.5.1. The DA3-GIANT backbone is pulled from the Hub
+on first use.
 
 `pip install -e .` puts both `gae` and the research packages (`stage1`,
 `stage2`, `utils`, ...) on the import path, so **no `PYTHONPATH` setup is

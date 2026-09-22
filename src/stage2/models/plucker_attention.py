@@ -38,9 +38,9 @@ except Exception:
     xops = None  # type: ignore[assignment]
     XFORMERS_AVAILABLE = False
 
-# FlashAttention v2 — preferred on Hopper (H100/H200). For head_dim=48 it is
+# FlashAttention v2 — preferred when available. For head_dim=48 it is
 # ~1.16× faster than xformers' memory_efficient_attention (incl. permute
-# overhead). See docs/notes/2026-05-26-raev2-analysis.md.
+# overhead).
 try:
     from flash_attn import flash_attn_func
 
@@ -299,7 +299,7 @@ class PluckerAttention(nn.Module):
             k = k.to(v.dtype)
             orig_dtype = q.dtype
 
-            # Preferred fast path on Hopper: FlashAttention v2.
+            # Preferred fast path: FlashAttention v2.
             # Layout: PyTorch SDPA = (B, H, N, D); FA expects (B, N, H, D).
             if FLASH_ATTN_AVAILABLE and orig_dtype in (torch.bfloat16, torch.float16):
                 q = q.permute(0, 2, 1, 3).contiguous()
