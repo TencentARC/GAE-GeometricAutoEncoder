@@ -109,22 +109,29 @@ See [`docs/DATA.md`](../docs/DATA.md) for the ImageNet WebDataset packing altern
 ## Training
 
 ```bash
-# GAE-64: codec -> latent statistics -> Flow/DiT
-python scripts/train/train.py codec --size 64 --gpus 8
-CODEC_CKPT_64=path/to/trained_gae_64_checkpoint.pt
-python scripts/train/compute_latent_stats.py --config configs/gae_64.yaml \
-  --codec-ckpt "$CODEC_CKPT_64" \
-  --num-batches 500 --output ckpts/latent_stats_gae_64.pt
-python scripts/train/train.py flow --size 64 --gpus 8 --vae-ckpt "$CODEC_CKPT_64"
-
-# GAE-128: codec -> latent statistics -> Flow/DiT
-python scripts/train/train.py codec --size 128 --gpus 8
-CODEC_CKPT_128=path/to/trained_gae_128_checkpoint.pt
-python scripts/train/compute_latent_stats.py --config configs/gae_128.yaml \
-  --codec-ckpt "$CODEC_CKPT_128" \
-  --num-batches 500 --output ckpts/latent_stats_gae_128.pt
-python scripts/train/train.py flow --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
+# Recommended: automatically runs codec -> latent statistics -> Flow/DiT
+scripts/train/run_train.sh --stage both --size 64 --gpus 8
+scripts/train/run_train.sh --stage both --size 128 --gpus 8 --cotrain-t2i
 ```
+
+For the manual Python workflow, keep the codec checkpoint in one variable:
+
+```bash
+# 1. Train the codec
+python scripts/train/train.py codec --size 64 --gpus 8
+
+# 2. Compute statistics from that trained codec
+CODEC_CKPT=/path/to/trained_gae_64_checkpoint.pt
+python scripts/train/compute_latent_stats.py \
+  --config configs/gae_64.yaml --codec-ckpt "$CODEC_CKPT" \
+  --num-batches 500 --output ckpts/latent_stats_gae_64.pt
+
+# 3. Train Flow/DiT with the same codec checkpoint
+python scripts/train/train.py flow --size 64 --gpus 8 --vae-ckpt "$CODEC_CKPT"
+```
+
+For GAE-128, use `--size 128`, `configs/gae_128.yaml`, and
+`ckpts/latent_stats_gae_128.pt`.
 
 `--gpus` is the number of GPU processes per node. For two 8-GPU nodes, run
 the same command on both nodes with a unique `--node-rank`:

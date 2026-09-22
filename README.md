@@ -262,22 +262,29 @@ text-to-image co-training data (BLIP3o + ImageNet-1k) use
 ### Train the GAE-64 / GAE-128 codec or the flow model
 
 ```bash
-# GAE-64: codec -> latent statistics -> Flow/DiT
-python scripts/train/train.py codec --size 64 --gpus 8
-CODEC_CKPT_64=path/to/trained_gae_64_checkpoint.pt
-python scripts/train/compute_latent_stats.py \
-  --config configs/gae_64.yaml --codec-ckpt "$CODEC_CKPT_64" \
-  --num-batches 500 --output ckpts/latent_stats_gae_64.pt
-python scripts/train/train.py flow --size 64 --gpus 8 --vae-ckpt "$CODEC_CKPT_64"
-
-# GAE-128: codec -> latent statistics -> Flow/DiT
-python scripts/train/train.py codec --size 128 --gpus 8
-CODEC_CKPT_128=path/to/trained_gae_128_checkpoint.pt
-python scripts/train/compute_latent_stats.py \
-  --config configs/gae_128.yaml --codec-ckpt "$CODEC_CKPT_128" \
-  --num-batches 500 --output ckpts/latent_stats_gae_128.pt
-python scripts/train/train.py flow --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
+# Recommended: automatically runs codec -> latent statistics -> Flow/DiT
+scripts/train/run_train.sh --stage both --size 64 --gpus 8
+scripts/train/run_train.sh --stage both --size 128 --gpus 8 --cotrain-t2i
 ```
+
+To run the stages separately with the Python entry points:
+
+```bash
+# 1. Train the GAE-64 codec
+python scripts/train/train.py codec --size 64 --gpus 8
+
+# 2. Set this to the checkpoint produced by Step 1, then compute statistics
+CODEC_CKPT=/path/to/trained_gae_64_checkpoint.pt
+python scripts/train/compute_latent_stats.py \
+  --config configs/gae_64.yaml --codec-ckpt "$CODEC_CKPT" \
+  --num-batches 500 --output ckpts/latent_stats_gae_64.pt
+
+# 3. Train Flow/DiT with the same frozen codec
+python scripts/train/train.py flow --size 64 --gpus 8 --vae-ckpt "$CODEC_CKPT"
+```
+
+The same sequence applies to GAE-128 by using `configs/gae_128.yaml`,
+`ckpts/latent_stats_gae_128.pt`, and `--size 128`.
 
 `--gpus` is the number of GPU processes per node. Multi-node training launches
 the same command on every node with a unique `--node-rank`:
