@@ -102,7 +102,9 @@ def main() -> None:
         "num_heads": int(ft_args.get("adapter_heads", 8)),
         "num_blocks": int(ft_args.get("adapter_num_blocks", 4)),
         "width_mult": float(ft_args.get("adapter_width_mult", 8.0)),
-        "max_views": 64,
+        # Preserve the temporal position-table length used by geoft training.
+        # Older checkpoints store this as adapter_max_views in their args.
+        "max_views": int(ft_args.get("adapter_max_views", 64)),
         "use_spatial": True,
     }
     out_cfg = Path(args.out_gld_config)

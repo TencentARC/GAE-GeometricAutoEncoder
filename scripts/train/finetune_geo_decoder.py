@@ -183,12 +183,18 @@ def build_models(cfg, args, device):
     _inject_rgb_decoder_from_ckpt(vae_cfg, vae_sd)
     vae_cfg.pop("rgb_decoder_hidden", None)
     vae_cfg.pop("rgb_decoder_heads", None)
+    # The temporal adapter owns a fixed sinusoidal view-position table.  Keep it
+    # consistent with the training run (e.g. the released 81-view geoft
+    # checkpoints); hard-coding 64 makes decoding an 81-view clip fail before
+    # the first layer is evaluated.
+    geo_cfg = _to_container_or_empty(vae_cfg.get("geo_adapter"))
+    max_views = int(getattr(args, "adapter_max_views", 0) or geo_cfg.get("max_views", 64))
     vae_cfg["geo_adapter"] = dict(
         hidden_ratio=args.adapter_hidden_ratio,
         num_heads=args.adapter_heads,
         num_blocks=args.adapter_num_blocks,
         width_mult=args.adapter_width_mult,
-        max_views=64,
+        max_views=max_views,
         use_spatial=True,
     )
     vae = GAECodec(**vae_cfg).to(device)
@@ -670,6 +676,8 @@ def main():
     ap.add_argument("--adapter-heads", type=int, default=8)
     ap.add_argument("--adapter-num-blocks", type=int, default=4)
     ap.add_argument("--adapter-width-mult", type=float, default=8.0)
+    ap.add_argument("--adapter-max-views", type=int, default=None,
+                    help="Maximum views in the temporal geo adapter (match the training run).")
     ap.add_argument("--exclude-cond", type=int, default=1)
     ap.add_argument("--views-per-step", type=int, default=8)
     ap.add_argument("--scenes-per-step", type=int, default=1)
