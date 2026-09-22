@@ -14,6 +14,10 @@
 #   --size {64|128}            latent dim                        (default: 64)
 #   --stage {codec|flow|both}  what to train                     (default: codec)
 #   --gpus N                   GPUs for torchrun                  (default: 8)
+#   --nnodes N                 training nodes                     (default: 1)
+#   --node-rank N              rank of this node                  (default: 0)
+#   --master-addr HOST         rank-0 rendezvous address          (default: 127.0.0.1)
+#   --master-port PORT         rendezvous port                   (default: 29500)
 #   --cotrain-t2i              (flow) interleave T2I into the i2v loop
 #   --codec-ckpt PATH          codec ckpt used to build latent stats for the
 #                              flow stage when they are missing
@@ -37,6 +41,10 @@ cd "$ROOT"
 SIZE=64
 STAGE=codec
 GPUS=8
+NNODES=1
+NODE_RANK=0
+MASTER_ADDR="${MASTER_ADDR:-127.0.0.1}"
+MASTER_PORT="${MASTER_PORT:-29500}"
 COTRAIN_T2I=0
 CODEC_CKPT=""
 STATS_BATCHES=500
@@ -50,6 +58,10 @@ while [[ $# -gt 0 ]]; do
     --size)         SIZE="$2"; shift 2 ;;
     --stage)        STAGE="$2"; shift 2 ;;
     --gpus)         GPUS="$2"; shift 2 ;;
+    --nnodes)       NNODES="$2"; shift 2 ;;
+    --node-rank)    NODE_RANK="$2"; shift 2 ;;
+    --master-addr)  MASTER_ADDR="$2"; shift 2 ;;
+    --master-port)  MASTER_PORT="$2"; shift 2 ;;
     --cotrain-t2i)  COTRAIN_T2I=1; shift ;;
     --codec-ckpt)   CODEC_CKPT="$2"; shift 2 ;;
     --stats-batches) STATS_BATCHES="$2"; shift 2 ;;
@@ -72,7 +84,7 @@ run() { echo "[run_train] + $*"; "$@"; }
 
 train_codec() {
   echo "[run_train] === Stage 1 codec (d${SIZE}) ==="
-  run python scripts/train/train.py codec --size "$SIZE" --gpus "$GPUS" "${EXTRA[@]}"
+  run python scripts/train/train.py codec --size "$SIZE" --gpus "$GPUS" --nnodes "$NNODES" --node-rank "$NODE_RANK" --master-addr "$MASTER_ADDR" --master-port "$MASTER_PORT" "${EXTRA[@]}"
 }
 
 ensure_latent_stats() {
@@ -92,7 +104,7 @@ ensure_latent_stats() {
 train_flow() {
   echo "[run_train] === Stage 2 flow (d${SIZE}) ==="
   ensure_latent_stats
-  local args=(flow --size "$SIZE" --gpus "$GPUS")
+  local args=(flow --size "$SIZE" --gpus "$GPUS" --nnodes "$NNODES" --node-rank "$NODE_RANK" --master-addr "$MASTER_ADDR" --master-port "$MASTER_PORT")
   [[ "$COTRAIN_T2I" == "1" ]] && args+=(--cotrain-t2i)
   run python scripts/train/train.py "${args[@]}" "${EXTRA[@]}"
 }

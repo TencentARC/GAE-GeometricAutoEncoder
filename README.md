@@ -269,6 +269,18 @@ python scripts/train/train.py flow --size 64 --gpus 8
 python scripts/train/train.py flow --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
 ```
 
+`--gpus` is the number of GPU processes per node. Multi-node training launches
+the same command on every node with a unique `--node-rank`:
+
+```bash
+# node 0 (10.0.0.1)
+python scripts/train/train.py codec --size 64 --gpus 8 --nnodes 2 --node-rank 0 --master-addr 10.0.0.1 --master-port 29500
+
+# node 1
+python scripts/train/train.py codec --size 64 --gpus 8 --nnodes 2 --node-rank 1 --master-addr 10.0.0.1 --master-port 29500
+```
+
+All nodes must see equivalent datasets/configs. Use a shared results directory when checkpoints must persist beyond node-local storage.
 The underlying entry points remain `scripts/train/train_codec.py` and
 `scripts/train/train_flow.py`; pass extra trainer arguments after `--`. Text-to-image is not a separate stage: it is
 co-trained *inside* the flow (i2v/t2v) model via `--cotrain-t2i`, which

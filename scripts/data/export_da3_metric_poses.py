@@ -44,7 +44,7 @@ from lib.da3_metric_pose import (  # noqa: E402
 from lib.scene_enumerate import enumerate_scene_dirs  # noqa: E402
 from _video_pack_helpers import round_robin_shard  # noqa: E402
 
-_DATA_ROOT = Path(os.environ.get("GAE_DATA_ROOT", "/data/gae"))
+_DATA_ROOT = Path(os.environ.get("GAE_DATA_ROOT", "/data/gae")).expanduser().resolve()
 DEFAULT_ROOTS = {
     "re10k_packed": _DATA_ROOT / "re10k_packed",
     "dl3dv_packed": _DATA_ROOT / "dl3dv_packed",
@@ -133,7 +133,7 @@ def _dataset_root(args: argparse.Namespace, dataset: str) -> Path:
     if args.root is not None:
         if len(resolve_datasets(args)) > 1:
             raise SystemExit("[fatal] --root only supported with a single --dataset")
-        return args.root
+        return args.root.expanduser().resolve()
     return DEFAULT_ROOTS[dataset]
 
 
