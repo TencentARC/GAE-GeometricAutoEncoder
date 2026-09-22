@@ -1,25 +1,3 @@
----
-title: GAE Geometry-Native World Generation
-emoji: 🌍
-colorFrom: indigo
-colorTo: blue
-sdk: gradio
-sdk_version: 6.15.1
-app_file: app.py
-python_version: 3.10.13
-startup_duration_timeout: 1h
-pinned: false
-license: other
-short_description: Camera-controlled video and text-to-image generation with GAE
-models:
-  - TencentARC/GAE-D64-1B
-tags:
-  - image-to-video
-  - text-to-image
-  - camera-control
-  - 3d-consistency
----
-
 # GAE: Learning a Geometry-Native Latent Space for 3D-Consistent World Generation
 
 <p align="center">
