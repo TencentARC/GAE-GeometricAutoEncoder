@@ -207,11 +207,10 @@ are the underlying commands, useful when you need to customize a run.
 
 ```bash
 # --- one-click training ---------------------------------------------------
-# Stage 1 codec, Stage 2 flow, or both. The flow stage auto-builds the
-# latent statistics (Eq. 15) from a codec checkpoint if they are missing.
+# Stage 1 codec, Stage 2 flow, or both. `both` runs codec -> latent stats -> flow.
 scripts/train/run_train.sh --stage codec --size 64  --gpus 8
 scripts/train/run_train.sh --stage flow  --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
-scripts/train/run_train.sh --stage both  --size 64  --codec-ckpt ckpts/gae_64.pt
+scripts/train/run_train.sh --stage both  --size 64
 
 # --- one-click evaluation -------------------------------------------------
 # Default tasks (recon,latent,gen) need only the shipped GAE ckpts + data.
@@ -291,7 +290,7 @@ RGB-decoder text alignment.
 
 Flow training reads `ckpts/latent_stats_gae_64.pt` (Eq. 15). Download it with
 `scripts/demo/download_checkpoints.py --subset codec`, or compute it for a custom
-codec — see **Latent statistics for a custom codec** below.
+codec — see **Latent statistics (required after codec, before Flow/DiT)** below.
 
 On network filesystems, run `python scripts/data/build_dataset_index.py --config
 configs/gae_64.yaml` once beforehand to pre-build the loader index caches so rank0
@@ -357,36 +356,18 @@ released flow weights are a stronger continued-training model these will not
 reproduce the paper numbers exactly — see [Results](#-results). One-click
 equivalent: `scripts/eval/run_eval.sh --size 64 --tasks gen,consistency,met3r,geometry`.
 
-### (Advanced) Latent statistics for a custom codec
+### Latent statistics (required after codec, before Flow/DiT)
 
 ```bash
 python scripts/train/compute_latent_stats.py \
-  --config configs/gae_64.yaml --codec-ckpt ckpts/gae_64.pt \
+  --config configs/gae_64.yaml --codec-ckpt <trained_codec_checkpoint.pt> \
   --num-batches 500 --output ckpts/latent_stats_gae_64.pt
 ```
 
-Per-channel mean/std over the training distribution (`--dataset` narrows it;
-`--full-cov` adds the whitening operator).
+This step must run after Stage 1 codec training and before Stage 2 Flow/DiT.
+The flow config reads `ckpts/latent_stats_gae_64.pt`; `--dataset` narrows the
+sampling distribution and `--full-cov` adds the optional whitening operator.
 
-### (Advanced) Geometry-decoder finetune — reproduce the merged VAE
-
-Aligns the codec geometry decode of flow latents to the frozen teacher (the
-zero-init `geo_adapter`), then folds the result into a full codec checkpoint:
-
-```bash
-# dump the per-scene geometry cache during flow eval
-GEO_CACHE_DIR=results/geo_cache python scripts/eval/eval_generation.py \
-  --config configs/flow_gae64.yaml --dit-ckpt ckpts/flow_gae64.pt --vae-ckpt ckpts/gae_64.pt
-
-python scripts/train/finetune_geo_decoder.py \
-  --config configs/gae_128.yaml --vae-ckpt ckpts/gae_128.pt \
-  --cache-dir results/geo_cache --out-dir results/geoft/run0 --steps 2000
-
-python scripts/train/merge_geoft_vae_ckpt.py \
-  --geoft results/geoft/run0/geoft_002000.pt --base-vae ckpts/gae_128.pt \
-  --base-gld-config configs/gae_128.yaml \
-  --out-ckpt ckpts/gae_128_geoft.pt --out-gld-config configs/gae_128_geoft.yaml
-```
 
 ---
 

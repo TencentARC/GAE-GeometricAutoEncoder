@@ -132,7 +132,7 @@ python scripts/data/build_dataset_index.py --config configs/flow_gae64.yaml
 ```
 
 
-## Latent statistics (required before Flow training)
+## Latent statistics (required after codec, before Flow/DiT)
 
 Stage 2 standardizes the codec posterior mean (Eq. 15) using per-channel
 mean/std saved to `ckpts/latent_stats_gae_64.pt` (the path the flow configs

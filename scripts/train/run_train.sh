@@ -5,8 +5,8 @@
 #   Stage 2  flow   ->  configs/flow_gae<size>.yaml    (scripts/train/train_flow.py)
 #
 # Flow training standardizes the codec posterior mean (paper Eq. 15) and reads
-# ckpts/latent_stats_gae_<size>.pt. If that file is missing this script computes
-# it from a codec checkpoint before launching the flow trainer.
+# ckpts/latent_stats_gae_<size>.pt. With --stage both, this script finds the
+# checkpoint produced by Stage 1, computes the stats, then starts Stage 2.
 #
 # Usage:
 #   scripts/train/run_train.sh [options] [-- extra trainer args]
@@ -20,8 +20,8 @@
 #   --master-port PORT         rendezvous port                   (default: 29500)
 #   --cotrain-t2i              (flow) interleave T2I into the i2v loop
 #   --codec-ckpt PATH          codec ckpt used to build latent stats for the
-#                              flow stage when they are missing
-#                              (default: ckpts/gae_<size>.pt)
+#                              flow stage when they are missing; stage both
+#                              auto-detects the new Stage 1 checkpoint
 #   --stats-batches N          batches for compute_latent_stats  (default: 500)
 #   -h, --help
 #
@@ -31,7 +31,7 @@
 # Examples:
 #   scripts/train/run_train.sh --stage codec --size 64  --gpus 8
 #   scripts/train/run_train.sh --stage flow  --size 128 --gpus 8 --cotrain-t2i
-#   scripts/train/run_train.sh --stage both  --size 64  --codec-ckpt ckpts/gae_64.pt
+#   scripts/train/run_train.sh --stage both  --size 64
 set -euo pipefail
 
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
@@ -47,6 +47,7 @@ MASTER_ADDR="${MASTER_ADDR:-127.0.0.1}"
 MASTER_PORT="${MASTER_PORT:-29500}"
 COTRAIN_T2I=0
 CODEC_CKPT=""
+FORCE_STATS=0
 STATS_BATCHES=500
 EXTRA=()
 
@@ -78,21 +79,40 @@ done
 CODEC_CFG="configs/gae_${SIZE}.yaml"
 FLOW_CFG="configs/flow_gae${SIZE}.yaml"
 STATS_PT="ckpts/latent_stats_gae_${SIZE}.pt"
-[[ -n "$CODEC_CKPT" ]] || CODEC_CKPT="ckpts/gae_${SIZE}.pt"
+DEFAULT_CODEC_CKPT="ckpts/gae_${SIZE}.pt"
 
 run() { echo "[run_train] + $*"; "$@"; }
+
+latest_codec_checkpoint() {
+  local root="results/gae-${SIZE}-codec"
+  [[ -d "$root" ]] || return 0
+  find "$root" -type f -path '*/checkpoints/*.pt' -printf '%T@ %p\n' 2>/dev/null \
+    | sort -nr | head -n 1 | cut -d' ' -f2-
+}
 
 train_codec() {
   echo "[run_train] === Stage 1 codec (d${SIZE}) ==="
   run python scripts/train/train.py codec --size "$SIZE" --gpus "$GPUS" --nnodes "$NNODES" --node-rank "$NODE_RANK" --master-addr "$MASTER_ADDR" --master-port "$MASTER_PORT" "${EXTRA[@]}"
+  if [[ "$STAGE" == "both" ]]; then
+    FORCE_STATS=1
+    local latest
+    latest="$(latest_codec_checkpoint || true)"
+    if [[ -n "$latest" ]]; then
+      CODEC_CKPT="$latest"
+      echo "[run_train] using newly trained codec checkpoint: $CODEC_CKPT"
+    elif [[ -z "$CODEC_CKPT" ]]; then
+      CODEC_CKPT="$DEFAULT_CODEC_CKPT"
+    fi
+  fi
 }
 
 ensure_latent_stats() {
-  if [[ -f "$STATS_PT" ]]; then
+  if [[ "$FORCE_STATS" != "1" && -f "$STATS_PT" ]]; then
     echo "[run_train] latent stats present: $STATS_PT"
     return
   fi
   echo "[run_train] latent stats missing: $STATS_PT"
+  [[ -n "$CODEC_CKPT" ]] || CODEC_CKPT="$DEFAULT_CODEC_CKPT"
   [[ -f "$CODEC_CKPT" ]] || die "cannot build latent stats: codec ckpt not found at '$CODEC_CKPT' (pass --codec-ckpt, or fetch stats with scripts/demo/download_checkpoints.py)"
   echo "[run_train] computing latent stats from $CODEC_CKPT ..."
   mkdir -p "$(dirname "$STATS_PT")"
@@ -114,8 +134,7 @@ case "$STAGE" in
   flow)  train_flow ;;
   both)
     train_codec
-    echo "[run_train] NOTE: 'both' will build latent stats from '$CODEC_CKPT'."
-    echo "[run_train]       Point --codec-ckpt at the codec checkpoint you just trained if it is not there yet."
+    echo "[run_train] generating latent stats from '$CODEC_CKPT' before Flow/DiT."
     train_flow
     ;;
 esac

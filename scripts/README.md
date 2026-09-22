@@ -20,10 +20,10 @@ Three convenience wrappers drive the Python entry points end-to-end:
 bash scripts/demo/run_demo.sh
 bash scripts/demo/run_demo.sh --smoke --output results/demo_smoke
 
-# Train: Stage 1 codec, Stage 2 flow, or both (auto-builds latent stats for flow)
+# Train: Stage 1 codec, then latent stats, then Stage 2 flow (or use `both`)
 scripts/train/run_train.sh --stage codec --size 64 --gpus 8
 scripts/train/run_train.sh --stage flow  --size 128 --gpus 8 --cotrain-t2i
-scripts/train/run_train.sh --stage both  --size 64  --codec-ckpt ckpts/gae_64.pt
+scripts/train/run_train.sh --stage both  --size 64
 
 # Eval: default tasks recon,latent,gen (GAE ckpts + data only)
 scripts/eval/run_eval.sh --size 64
@@ -133,40 +133,20 @@ single-image T2I steps into the multi-view loop (tune with `--t2i-every-k`). The
 codec has its own optional `cotrain_t2i` block (RGB-decoder text alignment),
 enabled via the config or `COTRAIN_T2I=1`.
 
-## Latent statistics (required before Flow training)
+## Latent statistics (required after codec, before Flow/DiT)
 
-Stage 2 standardizes the codec latent (Eq. 15). Download the shipped stats, or
-compute them for a codec you trained yourself:
+After Stage 1 codec training, compute the per-channel mean/std used by Stage 2
+to standardize codec latents (Eq. 15):
 
 ```bash
 python scripts/train/compute_latent_stats.py --config configs/gae_64.yaml \
-  --codec-ckpt ckpts/gae_64.pt --num-batches 500 --output ckpts/latent_stats_gae_64.pt
+  --codec-ckpt <trained_codec_checkpoint.pt> \
+  --num-batches 500 --output ckpts/latent_stats_gae_64.pt
 ```
 
-The flow configs read `ckpts/latent_stats_gae_64.pt`. Add `--full-cov` for the
-whitening operator used by the text-to-image recipe.
+Then start Stage 2 Flow/DiT; its config reads `ckpts/latent_stats_gae_64.pt`.
+Use `--full-cov` only when the text-to-image recipe needs the whitening operator.
 
-## Geometry-decoder finetune (reproduce the merged VAE)
-
-Aligns the codec geometry decode of flow latents to the frozen teacher, the
-final step behind the released "merged" codec. It consumes a geometry cache
-dumped by `eval_generation.py`:
-
-```bash
-# 1) dump the per-scene geo cache while running flow eval
-GEO_CACHE_DIR=results/geo_cache python scripts/eval/eval_generation.py \
-  --config configs/flow_gae64.yaml --dit-ckpt ckpts/flow_gae64.pt --vae-ckpt ckpts/gae_64.pt
-
-# 2) train the zero-init geometry adapter
-python scripts/train/finetune_geo_decoder.py --config configs/gae_128.yaml \
-  --vae-ckpt ckpts/gae_128.pt --cache-dir results/geo_cache \
-  --out-dir results/geoft/run0 --steps 2000
-
-# 3) fold the trained groups back into a full codec ckpt + config
-python scripts/train/merge_geoft_vae_ckpt.py --geoft results/geoft/run0/geoft_002000.pt \
-  --base-vae ckpts/gae_128.pt --base-gld-config configs/gae_128.yaml \
-  --out-ckpt ckpts/gae_128_geoft.pt --out-gld-config configs/gae_128_geoft.yaml
-```
 
 ## Codec evaluation
 
