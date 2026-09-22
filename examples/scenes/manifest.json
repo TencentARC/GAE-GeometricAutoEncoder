@@ -1,0 +1,60 @@
+{
+  "forest_lake_trail": {
+    "prompt": "a serene forest path winding through a dense grove of tall, slender pine trees with a mix of green and brown trunks. The path is a narrow dirt trail, bordered by lush green underbrush and a variety of small plants. Sunlight filters through the canopy, casting dappled shadows on the ground. To the left, a calm body of water stretches out, its surface reflecting the sky. The sky above is clear and blue, suggesting a bright, sunny day. The overall atmosphere is peaceful and natural, with the forest and water creating a harmonious and tranquil setting.",
+    "image": "forest_lake_trail.jpg",
+    "poses": "forest_lake_trail_poses.npz",
+    "gt_video": "forest_lake_trail_gt.mp4",
+    "num_frames": 81,
+    "image_size_hw": [
+      378,
+      672
+    ],
+    "fps": 12,
+    "cond_num": 1,
+    "convention": "camera-to-world (OpenCV: x-right, y-down, z-forward)",
+    "K_frame0": [
+      539.09,
+      535.63,
+      335.59,
+      188.59
+    ],
+    "translation_span_xyz": [
+      0.367,
+      0.049,
+      4.092
+    ],
+    "source_dataset": "Pexels",
+    "license_note": "Pexels License (free commercial use); OK to distribute \u2014 verify the specific clip.",
+    "source_scene": "pexels_010",
+    "prompt_file": "forest_lake_trail.txt"
+  },
+  "autumn_waterfall": {
+    "prompt": "a serene autumn forest scene with a small waterfall cascading down a rocky path. The forest is lush with trees displaying vibrant fall colors, including shades of orange, red, and yellow. The ground is covered with a carpet of fallen leaves, adding to the autumnal atmosphere. The water in the stream is clear and reflective, with small ripples and reflections of the surrounding foliage. The rocks along the stream are large and jagged, creating a natural barrier that the water flows over. The overall scene is peaceful and inviting, with the warm colors of the autumn leaves contrasting beautifully with the cool tones of the water and rocks.",
+    "image": "autumn_waterfall.jpg",
+    "poses": "autumn_waterfall_poses.npz",
+    "gt_video": "autumn_waterfall_gt.mp4",
+    "num_frames": 81,
+    "image_size_hw": [
+      378,
+      672
+    ],
+    "fps": 12,
+    "cond_num": 1,
+    "convention": "camera-to-world (OpenCV: x-right, y-down, z-forward)",
+    "K_frame0": [
+      368.57,
+      367.23,
+      335.59,
+      188.59
+    ],
+    "translation_span_xyz": [
+      0.098,
+      0.389,
+      8.971
+    ],
+    "source_dataset": "Pexels",
+    "license_note": "Pexels License (free commercial use); OK to distribute \u2014 verify the specific clip.",
+    "source_scene": "pexels_017",
+    "prompt_file": "autumn_waterfall.txt"
+  }
+}

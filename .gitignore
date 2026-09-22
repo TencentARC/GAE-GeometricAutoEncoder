@@ -1,0 +1,38 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+dist/
+build/
+
+# Weights and run artifacts (download from Hugging Face)
+ckpts/
+results/
+wandb/
+hf_home/
+hf_cache/
+*.safetensors
+*.pt
+!model_stats/**/*.pt
+
+# Local MIT copy — GitHub ships LICENSE.txt
+LICENSE
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# GT clips and non-redistributable demo scenes
+examples/scenes/*_gt.mp4
+examples/scenes/bedroom*
+examples/scenes/historic_hall*
+examples/scenes/hillside_car*
+examples/scenes/city_street*
+examples/scenes/office_desk*
+examples/scenes/museum_gallery*
+.write_test

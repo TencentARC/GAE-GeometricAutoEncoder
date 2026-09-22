@@ -1,0 +1,218 @@
+# =============================================================================
+# GAE-64 — Stage 1 codec training (paper Section 3.1)
+#
+# Compresses the four-level frozen DA3-GIANT hierarchy into a 64-channel
+# per-view latent and rebuilds every level, so the frozen DA3 DPT head can still
+# read depth / rays / point maps while a learned RGB head renders appearance.
+#
+#   L_codec = L_feat + kl_weight * L_kl + L_rgb + L_geo + L_repr
+#   L_repr  = repa.weight * (L_tok + repa.struct_mu_weight * L_struct)
+#
+# This is the released GAE-64 codec recipe behind `gae_64.pt` — full-ft,
+# 896x504-primary, divided space-time RoPE RGB-head, REPA on.
+# Dataset roots use ${GAE_DATA_ROOT}. Token-budget batching is
+# batch_size * max_views * max_res_tokens (see training.adaptive_batch_by_tokens).
+# =============================================================================
+
+num_views: 81
+n_corres_train: 0
+
+# ── Datasets ────────────────────────────────────────────────────────────────
+# Dataset root. Override with GAE_DATA_ROOT=/your/packed_data
+data_root: ${oc.env:GAE_DATA_ROOT,/data/gae}
+
+# 7-resolution mix, 896x504 primary. All listed resolutions are drawn
+# uniformly. All training datasets MUST share one resolution list
+# (CatDataset asserts this).
+dataset_re10k:     VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/re10k_packed/train", dataset_tag="re10k_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(896, 504), (504, 504), (672, 378), (378, 672), (588, 336), (448, 448), (336, 336)], num_views=${num_views}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=2, ref_view_sampling="prefix")
+dataset_dl3dv:     VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/dl3dv_packed", dataset_tag="dl3dv_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(896, 504), (504, 504), (672, 378), (378, 672), (588, 336), (448, 448), (336, 336)], num_views=${num_views}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=1, ref_view_sampling="prefix")
+dataset_mvssynth:  VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/mvssynth_packed", dataset_tag="mvssynth_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(896, 504), (504, 504), (672, 378), (378, 672), (588, 336), (448, 448), (336, 336)], num_views=${num_views}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=1, ref_view_sampling="prefix")
+dataset_scannetpp: VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/scannetpp_preprocessed", dataset_tag="scannetpp_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(896, 504), (504, 504), (672, 378), (378, 672), (588, 336), (448, 448), (336, 336)], num_views=${num_views}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=2, ref_view_sampling="prefix")
+dataset_osp:       OSPIstockRGB_Multi(allow_repeat=False, split=None, FEATURE_ROOT="${data_root}/osp/osp_istock_camera_features", CAMERA_ROOT="${data_root}/osp/osp_istock_camera_features_camera_json", VIDEO_ROOT_REMAP=[], num_views=${num_views}, resolution=[(896, 504), (504, 504), (672, 378), (378, 672), (588, 336), (448, 448), (336, 336)], pose_frame="rel_video", sample_stride=4, sampling_strategy="random_stride", min_metric_motion=0.4, min_valid_ratio=1.0, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, emit_caption_key=False, is_t2v=False, caption_source="prompt_or_filename")
+dataset_openvid:   VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/openvid_packed", dataset_tag="openvid_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(896, 504), (504, 504), (672, 378), (378, 672), (588, 336), (448, 448), (336, 336)], num_views=${num_views}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=2, ref_view_sampling="prefix")
+dataset_vidgen:    VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/vidgen_packed", dataset_tag="vidgen_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(896, 504), (504, 504), (672, 378), (378, 672), (588, 336), (448, 448), (336, 336)], num_views=${num_views}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=2, ref_view_sampling="prefix")
+
+# ── Fixed validation benchmark (seed=0, V=33, 672×378) ──────────────────────
+# Cover every training source (not just re10k+OSP). Pin a single mid-wide
+# resolution so val is comparable across runs; 896×504 quality is left to
+# offline eval. re10k uses the held-out test split; other sources reuse the
+# train ROOT with seed=0 (no separate public test packs).
+dataset_test_re10k:     VideoMetaScene_Multi(dataset_tag="re10k_test", ROOT="${data_root}/re10k_packed/test", is_metric=False, allow_repeat=False, split=None, resolution=[(672, 378)], num_views=33, n_corres=${n_corres_train}, min_interval=1, max_interval=1, seed=0)
+dataset_test_dl3dv:     VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/dl3dv_packed", dataset_tag="dl3dv_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=33, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=1, ref_view_sampling="prefix", seed=0)
+dataset_test_mvssynth:  VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/mvssynth_packed", dataset_tag="mvssynth_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=33, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=1, ref_view_sampling="prefix", seed=0)
+dataset_test_scannetpp: VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/scannetpp_preprocessed", dataset_tag="scannetpp_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=33, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=2, ref_view_sampling="prefix", seed=0)
+dataset_test_osp:       OSPIstockRGB_Multi(FEATURE_ROOT="${data_root}/osp/osp_istock_camera_features", CAMERA_ROOT="${data_root}/osp/osp_istock_camera_features_camera_json", VIDEO_ROOT_REMAP=[], num_views=33, resolution=[(672, 378)], pose_frame="rel_chunk", min_valid_ratio=1.0, max_index_videos=200, seed=0)
+dataset_test_openvid:   VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/openvid_packed", dataset_tag="openvid_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=33, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=2, ref_view_sampling="prefix", seed=0)
+dataset_test_vidgen:    VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/vidgen_packed", dataset_tag="vidgen_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=33, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=2, ref_view_sampling="prefix", seed=0)
+
+# Training mixture (T2V openvid+vidgen ~37%, geometry ~63%).
+train_dataset: 50000 @ ${dataset_osp} + 50000 @ ${dataset_openvid} + 30000 @ ${dataset_re10k} + 25000 @ ${dataset_dl3dv} + 25000 @ ${dataset_vidgen} + 12000 @ ${dataset_scannetpp} + 12000 @ ${dataset_mvssynth}
+test_dataset: 50 @ ${dataset_test_osp} + 50 @ ${dataset_test_openvid} + 50 @ ${dataset_test_re10k} + 50 @ ${dataset_test_dl3dv} + 50 @ ${dataset_test_vidgen} + 50 @ ${dataset_test_scannetpp} + 50 @ ${dataset_test_mvssynth}
+
+# ── Frozen DA3-GIANT-1.1 backbone (encoder + DPT geometry head) ─────────────
+stage_1:
+  target: stage1.da3.DA3Backbone          # frozen throughout both stages
+  params:
+    encoder_pretrained_path: 'depth-anything/DA3-GIANT-1.1'
+    encoder_input_size: 504
+    encoder_type: 'DA3EncoderDirect'
+    noise_tau: 0.0
+    reshape_to_2d: false
+    dpt_model_type: 'da3-giant'
+    da3_weights_path: 'pretrained_models/da3_giant/model.safetensors'
+    # 'none' = use the official DA3-GIANT DPT head, not an extra finetuned one.
+    dpt_decoder_path: 'none'
+
+# ── GAE codec architecture ──────────────────────────────────────────────────
+# Verbatim architecture of the shipped d64 checkpoint (warm-start compatible).
+codec:                                    # GAE codec (Stage 1) hyperparameters
+  latent_dim: 64                           # <-- GAE-64. Use 128 for GAE-128.
+  hidden_dims: [3072, 2048, 1024]
+  num_attn_blocks: 4
+  attn_heads: 8
+  kl_weight: 1.0e-6                        # small: regularise, do not collapse
+  use_spatial: true
+  level_weights: [2.0, 1.0, 1.0, 1.0]      # L_feat weights over DA3 levels 0..3
+  stats_dir: 'model_stats/da3_giant_5ds'   # per-level normalisation statistics
+  feature_level_dim: 3072
+  rgb_decoder:                             # learned RGB head D_theta^rgb
+    # Internally `type: mae` selects this transformer RGB head; the released
+    # code only ships this head, so `type` is implicit.
+    hidden_dim: 1024
+    depth: 12
+    num_heads: 16
+    ffn_ratio: 4.0
+    patch_size: 14
+    # Divided space-time (TimeSformer-style) head: every block runs
+    # temporal-attn -> spatial-attn -> FFN with rotary PE. The shipped
+    # checkpoint's rgb_head.blocks.N.{t_norm,t_attn,s_norm,s_attn,m_norm,mlp}
+    # keys REQUIRE both temporal:true AND temporal_mode:divided.
+    temporal: true
+    temporal_mode: divided
+    temporal_num_heads: 16
+    rope_theta: 10000.0
+
+training:
+  epochs: 40
+  batch_size: 1
+  grad_accum: 1
+  # Full fine-tune: the DA3 encoder stays frozen, but the FeatureVAE trunk
+  # (enc/dec attn + mu/logvar + dec_conv) AND the divided RGB head all train.
+  train_rgb_decoder_only: false
+  rgb_only_loss: false
+  # Token-budget batching: budget = batch_size * max_views * max_res_tokens;
+  # per-segment batch size is clamped to that budget.
+  adaptive_batch_by_tokens: true
+  view_batch_caps: {}
+  max_batch_size: 32
+  num_workers: 8
+  min_views: 17
+  max_views: 81
+  view_switch_interval: 200
+
+  rgb_weight: 0.5                          # L_rgb
+  lpips_weight: 0.5
+  lpips_start_step: 0
+  # RGB-only latent jitter: perturb latents before RGB decode so the head is
+  # robust to noisy diffusion-generated latents (feature/REPA/geo decode clean z).
+  # The shipped d64 run resumed at 30000 and ramped jitter over 1k steps.
+  rgb_latent_jitter_mode: mixed
+  rgb_latent_jitter_sigma: 0.1
+  rgb_latent_jitter_prob: 0.7
+  rgb_latent_jitter_relative: true
+  rgb_latent_jitter_start_step: 30000
+  rgb_latent_jitter_warmup_steps: 1000
+
+  pose_weight: 2.0                         # L_geo (pose), DPT self-distillation
+  geo_depth_weight: 2.0                    # L_geo (depth)
+  pose_start_step: 0
+  pose_max_views: 1024                     # >= any bs*V -> full-frame geometry
+
+  # Gaussian-splatting distillation: off for the shipped recipe.
+  gs_distill_weight: 0.0
+  gs_distill_max_views: 16
+  gs_distill_max_scenes: 1
+  gs_distill_max_num_views: 24
+  gs_distill_start_step: 0
+  gs_distill_conf_weight: 1.0
+
+  da3_weights_path: 'pretrained_models/da3_giant/model.safetensors'
+  ema_decay: 0.999
+  log_interval: 50
+  checkpoint_interval: 1000
+  val_interval: 500
+  # 7 sources × 50 = 350 capped samples; allow enough batches to touch all.
+  val_max_batches: 100
+  max_steps: 50000
+  clip_grad: 1.0
+  global_seed: 0
+  optimizer:
+    lr: 1.0e-4
+    betas: [0.9, 0.95]
+    weight_decay: 0.01
+  scheduler:
+    type: cosine
+    warmup_epochs: 0
+    decay_end_steps: 50000
+    base_lr: 1.0e-4
+    final_lr: 1.0e-6
+
+# Single-image co-training: off for the shipped spacetime recipe.
+cotrain_t2i:
+  enable: false
+  every_k: 3
+  preserve_geometry_steps: true
+  max_batch_size: 32
+  dataset:
+    data_dir:
+      - "${data_root}/BLIP3o"
+      - "${data_root}/Blip3o_style"
+    splits: ["journeydb", "short", "long", "imagenet"]
+    imagenet_arrow_root: "${data_root}/imagenet-1k/arrow"
+    imagenet_arrow_split: "train"
+    split_weights: {imagenet: 8}
+    shuffle_buffer: 2000
+    dual_caption_prob: 0.5
+    resolution: [[504, 504], [504, 378], [504, 336], [504, 280], [252, 252]]
+    virtual_epoch_steps: 10000
+
+# GAN discriminator: shipped disabled (start steps are effectively infinite).
+# The paper's codec objective has no adversarial term; GAN stays off.
+gan:
+  disc:
+    arch:
+      dino_ckpt_path: 'models/discs/dino_vit_small_patch8_224.pth'
+      ks: 9
+      norm_type: 'bn'
+      using_spec_norm: true
+      recipe: 'S_8'
+    optimizer: {lr: 2.0e-4, betas: [0.9, 0.95], weight_decay: 0.0}
+    augment: {prob: 1.0, cutout: 0.0}
+  loss:
+    disc_loss: hinge
+    gen_loss: vanilla
+    disc_weight: 0.5
+    disc_start_step: 999999999
+    disc_upd_start_step: 999999999
+    max_d_weight: 10000.0
+    disc_updates: 1
+
+# ── L_repr: latent shaping (paper Eqs. 8-10) ────────────────────────────────
+# REPA is ON for the shipped d64 codec (the d128 codec ships with it OFF).
+repa:
+  enabled: true
+  weight: 0.25                 # lambda_repa
+  start_step: 0
+  target: cradio               # teacher for L_tok  (C-RADIOv2.5-B)
+  proj_dim: 768                # g_eta: latent -> teacher width
+  proj_hidden: 768
+  cradio_version: radio_v2.5-b
+  cradio_input_res: 256
+  struct_target: dinov2        # teacher for L_struct (DINOv2-Large)
+  # L_struct operates on the raw posterior mean (the paper's term, Eq. 9-10).
+  struct_mu_weight: 8.0        # lambda_mu
+  # Projected-space variant, used only for the Table 2 ablation. Keep at 0.
+  struct_weight: 0.0
+  struct_max_tokens: 0         # 0 = full N x N grid
+  dinov2_model_id: facebook/dinov2-large
+  dinov2_input_res: 252

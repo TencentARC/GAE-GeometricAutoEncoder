@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gae"
+version = "0.1.0"
+description = "GAE: Learning a Geometry-Native Latent Space for 3D-Consistent World Generation"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"   # torch 2.5.1 wheels cover cp310-cp312
+license = { file = "LICENSE.txt" }
+
+dependencies = [
+    "torch==2.5.1",
+    "torchvision>=0.16.0",
+    "xformers",
+    "depth-anything-3>=0.1.0",
+    "omegaconf",
+    "einops",
+    "transformers",
+    "safetensors",
+    "huggingface-hub",
+    "diffusers",
+    "accelerate",
+    "timm",
+    "tqdm",
+    "torchdiffeq",
+    "lpips",
+    "opencv-python",
+    "pillow",
+    "scipy",
+    "scikit-image",
+    "imageio",
+    "av",
+    "trimesh",
+    "plyfile",
+    "addict",
+    "e3nn",
+    "numpy",
+]
+
+[project.optional-dependencies]
+# Only needed by the geometry evaluation entry points (scripts/eval_geometry.py,
+# scripts/eval_3d_consistency.py), which call external estimators.
+eval = [
+    "evo",
+    "pycolmap",
+    # External geometry evaluators, imported lazily by the eval entry
+    # points: VGGT (scripts/eval_3d_consistency.py), MEt3R
+    # (scripts/eval_met3r.py) and Pi3 (scripts/eval_geometry.py).
+    # torch_dct is optional too: src/metrics/latent.py ships a pure-torch
+    # DCT fallback that gives identical results when it is absent.
+]
+# Optional optimiser. Not installed by default: it pins torch>=2.7.1 while this
+# project sits on torch==2.5.1. The trainer falls back to AdamW when absent.
+muon = ["gram-newton-schulz"]
+# Optional, for the OSP dataset loader and the BLIP3o webdataset path.
+data = ["orjson", "pyarrow", "webdataset", "s3torchconnector"]
+# Developer tools for linting and the CPU-only test suite (see CONTRIBUTING.md).
+dev = ["pytest", "ruff"]
+
+# `gae` is the thin public facade; `src/` holds the research modules
+# (stage1, stage2, utils, metrics, video, data, cut3r_data, disc). Both trees
+# are installed so `pip install -e .` works without setting PYTHONPATH.
+[tool.setuptools.packages.find]
+where = ["src", "."]
+include = [
+    "gae*",
+    "stage1*", "stage2*", "utils*", "metrics*", "video*",
+    "data*", "cut3r_data*", "disc*",
+]
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.json"]
+
+[tool.ruff]
+line-length = 100

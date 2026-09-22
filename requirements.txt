@@ -1,0 +1,42 @@
+# Core — verified with Python 3.10 + CUDA 12.x
+torch==2.5.1
+torchvision>=0.16.0
+xformers
+
+# Geometry foundation model (frozen backbone)
+depth-anything-3>=0.1.0
+
+# Config / models / diffusion
+omegaconf
+einops
+transformers
+safetensors
+huggingface-hub
+diffusers
+accelerate
+timm
+tqdm
+
+# Training / sampling
+torchdiffeq
+lpips
+wandb
+
+# Data / geometry utilities
+opencv-python
+pillow
+scipy
+scikit-image
+imageio
+imageio-ffmpeg
+av
+trimesh
+plyfile
+addict
+e3nn
+numpy
+
+# Dataset preparation / paper training recipes
+pyarrow
+orjson
+webdataset

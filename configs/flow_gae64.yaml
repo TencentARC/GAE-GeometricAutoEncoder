@@ -1,0 +1,264 @@
+# =============================================================================
+# GAE-64 flow model — Stage 2 (paper Sections 3.2-3.3)
+#
+# The Stage 1 codec is frozen; its posterior mean is standardized per channel and
+# this conditional flow model is trained over that state with RAEv2-style
+# x-prediction. Three controls specify the state without evolving with it:
+#
+#   * clean reference latents   ("evidence rather than state", Eq. 14)
+#   * metric Plucker ray maps   (Eq. 13)
+#   * text, via cross-attention
+#
+# GROUND TRUTH: mirrors the exact recipe that produced the shipped d64 flow
+# checkpoint (`flow_gae64.pt`). It reads the frozen d64 codec backend
+# (configs/gae_64.yaml) at 672x378, V=81. All training knobs below are verbatim.
+#
+# DATASETS: the ${GAE_DATA_ROOT}-runnable geometry + T2V subset used by this
+# released recipe. Training knobs below match the shipped `flow_gae64.pt` run.
+# =============================================================================
+
+num_views: 81
+view_choices: [81]
+n_corres_train: 0
+
+# ── Geometry + T2V datasets (DA3-metric poses, 672x378) ─────────────────────
+# Dataset root. Override with GAE_DATA_ROOT=/your/packed_data
+data_root: ${oc.env:GAE_DATA_ROOT,/data/gae}
+
+dataset_re10k_da3:     VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/re10k_packed/train", dataset_tag="re10k_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=${num_views}, view_choices=${view_choices}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=10, ref_view_sampling="prefix")
+dataset_dl3dv_da3:     VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/dl3dv_packed", dataset_tag="dl3dv_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=${num_views}, view_choices=${view_choices}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=3, ref_view_sampling="prefix")
+dataset_scannetpp_da3: VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/scannetpp_preprocessed", dataset_tag="scannetpp_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=${num_views}, view_choices=${view_choices}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=10, ref_view_sampling="prefix")
+dataset_mvssynth_da3:  VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/mvssynth_packed", dataset_tag="mvssynth_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=${num_views}, view_choices=${view_choices}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=3, ref_view_sampling="prefix")
+dataset_osp_da3:       OSPIstockRGB_Multi(allow_repeat=False, split=None, FEATURE_ROOT="${data_root}/osp/osp_istock_camera_features", CAMERA_ROOT="${data_root}/osp/osp_istock_camera_features_camera_json", VIDEO_ROOT_REMAP=[], num_views=${num_views}, view_choices=${view_choices}, resolution=[(672, 378)], pose_frame="rel_video", sample_stride=4, sampling_strategy="random_stride", min_metric_motion=0.4, min_valid_ratio=1.0, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, emit_caption_key=False, is_t2v=False, caption_source="prompt_or_filename")
+dataset_openvid_da3:   VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/openvid_packed", dataset_tag="openvid_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=${num_views}, view_choices=${view_choices}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=2, ref_view_sampling="prefix")
+dataset_vidgen_da3:    VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/vidgen_packed", dataset_tag="vidgen_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=${num_views}, view_choices=${view_choices}, n_corres=${n_corres_train}, skip_bad_poses=True, max_translation_norm=100, max_pose_retries=1000, log_bad_pose_every=100, min_interval=1, max_interval=2, ref_view_sampling="prefix")
+
+# Held-out evaluation pool (paper protocol: reference view + 50 Euler steps, CFG 2).
+dataset_test: VideoMetaScene_Multi(allow_repeat=False, split=None, ROOT="${data_root}/re10k_packed/test", dataset_tag="re10k_test_da3_metric", pose_meta_name="meta_da3_metric.json", is_metric=True, resolution=[(672, 378)], num_views=${num_views}, n_corres=${n_corres_train}, min_interval=1, max_interval=1, ref_view_sampling="prefix")
+
+# Public-subset clip counts (verbatim geo-main weights for these sources).
+train_dataset: 13200 @ ${dataset_re10k_da3} + 9000 @ ${dataset_dl3dv_da3} + 10200 @ ${dataset_scannetpp_da3} + 4800 @ ${dataset_mvssynth_da3} + 3200 @ ${dataset_osp_da3} + 4800 @ ${dataset_openvid_da3} + 8000 @ ${dataset_vidgen_da3}
+test_dataset: 200 @ ${dataset_test}
+
+# ── Stage 1: frozen DA3-GIANT encoder (online encode each step) ─────────────
+stage_1:
+  target: stage1.da3.DA3Backbone
+  params:
+    encoder_pretrained_path: 'depth-anything/DA3-GIANT-1.1'
+    encoder_input_size: 672
+    encoder_type: 'DA3EncoderDirect'
+    noise_tau: 0.0
+    reshape_to_2d: false
+    dpt_model_type: 'da3-giant'
+    da3_weights_path: 'pretrained_models/da3_giant/model.safetensors'
+    dpt_decoder_path: 'none'
+
+# Frozen GAE-64 codec and its per-channel latent statistics.
+vae_checkpoint: "ckpts/gae_64.pt"
+gld_config: "configs/gae_64.yaml"
+latent_stats: "ckpts/latent_stats_gae_64.pt"   # from scripts/download_checkpoints.py or scripts/compute_latent_stats.py
+
+codec:                                    # must match the frozen codec (Stage 1)
+  latent_dim: 64
+  hidden_dims: [3072, 2048, 1024]
+  num_attn_blocks: 4
+  attn_heads: 8
+  kl_weight: 1.0e-6
+  use_spatial: true
+  level_weights: [2.0, 1.0, 1.0, 1.0]
+  stats_dir: 'model_stats/da3_giant_5ds'
+  feature_level_dim: 3072
+
+# Text conditioning used by the released GAE flow checkpoints.
+use_text: true
+text_encoder:
+  model_name: "Qwen/Qwen3-0.6B"
+  max_length: 256
+
+# ── Stage 2: flow model ─────────────────────────────────────────────────────
+stage_2:
+  target: stage2.models.dit_temporal.GAEFlowTemporal
+  params:
+    temporal_band_frac: 0.5
+    temporal_theta: 10000.0
+    cond_token_mode: "zero_init"           # clean reference evidence (Eq. 14)
+    patch_size: 1                          # 1x1 latent tokens, DDT-style
+    input_size: 27                         # 378/14 token rows at 672x378
+    in_channels: 64                        # must equal the codec latent_dim
+    hidden_size: [768, 2048]
+    depth: [28, 6]
+    num_heads: [16, 16]
+    mlp_ratio: 4.0
+    use_qknorm: true
+    use_swiglu: true
+    use_rope: true
+    use_rmsnorm: true
+    wo_shift: false
+    use_pos_embed: false
+
+    # Metric ray-space camera conditioning (Eq. 13). Zero-init so the model
+    # starts from a no-camera solution and learns the ray branch smoothly.
+    plucker_init: "zero"
+    plucker_init_scale: 0.01
+    plucker_mlp_hidden: 64
+    plucker_scale: 1.0
+    scale_gate_hidden: 0
+    log_scale_aug_prob: 0.3                # augments log||m||, the metric scale
+    log_scale_aug_range: [-1.2, 1.6]
+
+    # Clean reference evidence (Eq. 14).
+    ref_key_scale: true
+    ref_key_max_scale: 3.0
+    ref_key_init_bias: -4.0
+
+    # Text, via cross-attention.
+    use_cross_attn: true
+    cross_attn_kdim: 1024
+    text_embed_dim: 1024
+    guidance_cross_attn: true
+
+    gradient_checkpointing: 1.0
+    prediction_type: 'x'                   # RAEv2-style x-prediction (Eq. 11)
+    base_model_depth: 8                    # IG baseline head
+
+transport:
+  params:
+    path_type: 'Linear'
+    prediction: 'x'
+    loss_weight: null
+    time_dist_type: 'logit-normal_0_1'
+
+sampler:
+  mode: ODE
+  params:
+    sampling_method: 'euler'
+    num_steps: 50
+    atol: 1.0e-6
+    rtol: 1.0e-3
+    reverse: false
+
+training:
+  global_seed: 0
+  epochs: 1000000
+  batch_size: 2
+  grad_accum_steps: 1
+  ema_decay: 0.9995
+  num_workers: 8
+  log_every: 10
+  clip_grad: 1.0
+  base_model_coeff: 1.0
+
+  # Condition dropout exposes the same weights to T2I, T2V and
+  # reference-conditioned NVS. The text drop rate is deliberately high: at
+  # 0.05/0.1 the cond and uncond x-predictions diverged mid-sequence, which
+  # CFG > 2 then amplified into a visible seam.
+  text_drop_prob: 0.10
+  camera_drop: 0.2
+  ref_drop_prob: 0.2
+
+  pose_origin: "first"
+  pose_translation_norm: "none"
+  pose_interval_scale: false
+  pose_interval_canonical: 10.0
+  pose_interval_min_scale: 0.1
+  pose_interval_max_scale: 1.0
+
+  # Auxiliary RGB loss on decoded latents; off for the paper configuration.
+  rgb_loss_weight: 0.0
+  rgb_loss_t_max: 0.4
+  rgb_loss_max_views: 8
+  rgb_loss_start_step: 0
+
+  base_lr: 5.0e-5
+  final_lr: 1.0e-6
+  warmup_steps: 500
+  decay_end_steps: 60000
+  schedule_type: 'cosine'
+  optimizer:
+    type: adamw
+    lr: 5.0e-5
+    betas: [0.9, 0.95]
+    weight_decay: 0.0
+    eps: 1.0e-8
+
+validation:
+  ckpt_every: 500
+  num_views: ${num_views}
+  cond_num: 1
+  guidance:
+    method: 'cfg'
+    scale: 2.0
+    t_min: 0.0
+    t_max: 1.0
+
+dataset:
+  num_views: ${num_views}
+  cond_num: 1
+  ref_view_sampling: prefix
+
+# Time-shift for the logit-normal sampling schedule (paper Eq. 11 warp).
+# Pinned to the value used to train the shipped d64 flow checkpoint
+# (dim = 27*48*64 tokens*channels = 82944; train_flow.py and gae/pipeline.py
+# both read this).
+misc:
+  time_dist_shift: 6.364
+  time_dist_shift_dim: 82944
+  time_dist_shift_base: 4096
+
+# Self-distillation (DDT) is not part of the released transport; keep disabled.
+self_flow:
+  enable: false
+  mask_ratio: 0.10
+  weight: 0.8
+  warmup_steps: 1000
+  student_depth: 8
+  teacher_depth: 20
+  proj_hidden: 2048
+  exclude_cond_views: true
+
+repa:
+  enable: false
+  weight: 0.5
+  align_depth: 8
+  proj_hidden: 2048
+  target_dim: 2048
+  target_level: -1
+
+motion_loss:
+  enable: false
+  strength: 1.0
+  max_multiplier: 4.0
+
+# Single-image T2I co-training at 672x378 (same 16:9 crop as video).
+cotrain_t2i:
+  enable: true
+  every_k: 4
+  time_dist_shift: 6.364
+  time_dist_shift_dim: 82944
+  time_dist_shift_base: 4096
+  loss_weight: 1.0
+  batch_size: 32
+  dataset:
+    data_dir:
+      - "${data_root}/BLIP3o"
+      - "${data_root}/Blip3o_style"
+    splits: ["journeydb", "short", "long", "scannetpp-v2", "dl3dv-v2", "re10k-v2", "mvssynth-v2", "i1-fluxreason", "i1-rendered_text", "i1-gptedit", "i1-textatlas", "i1-pexels", "i1-midjourneyv6", "imagenet"]
+    split_probs:
+      journeydb: 0.15
+      short: 0.15
+      long: 0.23
+      scannetpp-v2: 0.027
+      dl3dv-v2: 0.073
+      re10k-v2: 0.091
+      mvssynth-v2: 0.0045
+      i1-fluxreason: 0.10
+      i1-rendered_text: 0.02
+      i1-gptedit: 0.05
+      i1-textatlas: 0.015
+      i1-pexels: 0.10
+      i1-midjourneyv6: 0.07
+      imagenet: 0.22
+    shuffle_buffer: 2000
+    dual_caption_prob: 0.5
+    image_size: [672, 378]
+    virtual_epoch_steps: 10000
