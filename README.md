@@ -7,14 +7,14 @@
 </p>
 
 <p align="center">
-<b>Jiahao Lu</b><sup>1*</sup> &ensp;
-<b>Minghao Yin</b><sup>2,3*</sup> &ensp;
-<b>Wenbo Hu</b><sup>2†</sup> &ensp;
-<b>Hengyu Liu</b><sup>4</sup><br>
-<b>Wang Zhao</b><sup>2</sup> &ensp;
-<b>Sai-Kit Yeung</b><sup>1</sup> &ensp;
-<b>Ying Shan</b><sup>2</sup> &ensp;
-<b>Yuan Liu</b><sup>1†</sup>
+<a href="https://github.com/jiah-cloud"><b>Jiahao Lu</b></a><sup>1*</sup> &ensp;
+<a href="https://github.com/TencentARC/GAE-GeometricAutoEncoder"><b>Minghao Yin</b></a><sup>2,3*</sup> &ensp;
+<a href="https://wbhu.github.io/"><b>Wenbo Hu</b></a><sup>2†</sup> &ensp;
+<a href="https://liuhengyu321.github.io/"><b>Hengyu Liu</b></a><sup>4</sup><br>
+<a href="https://thuzhaowang.github.io/"><b>Wang Zhao</b></a><sup>2</sup> &ensp;
+<a href="https://saikit.org/index.html"><b>Sai-Kit Yeung</b></a><sup>1</sup> &ensp;
+<a href="https://scholar.google.com/citations?user=4oXBp9UAAAAJ&amp;hl=en"><b>Ying Shan</b></a><sup>2</sup> &ensp;
+<a href="https://liuyuan-pal.github.io/"><b>Yuan Liu</b></a><sup>1†</sup>
 </p>
 
 <p align="center">
