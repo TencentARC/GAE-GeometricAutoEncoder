@@ -682,31 +682,69 @@ def _recover_view_pointclouds(
     dpt_out, depth_tensor, rgb_imgs, H, W, device, *,
     stride: int = 4,
 ) -> list[tuple[np.ndarray, np.ndarray]]:
-    """Per-view world point clouds in chunk-local recovered pose frame."""
+    """Per-view world point clouds from the decoded DA3 ray/depth pair.
+
+    ``recover_poses`` is still run on the decoded ray to keep the official DA3
+    camera-pose convention and validate the ray output. Point coordinates,
+    however, are built directly from that same ray: its first three channels
+    are world-frame directions and its last three channels are the per-view
+    camera center. Mixing the ray translation scale with a separate pinhole
+    back-projection from recovered ``K/c2w`` causes geoft point clouds to drift.
+    """
     ray = dpt_out.get("ray")
     rc = dpt_out.get("ray_conf")
     if ray is None:
         raise RuntimeError("DPT output missing ray — cannot build point cloud")
     ray_np = _ray_to_numpy(ray)
     rc_np = _rayconf_to_numpy(rc)
-    c2w_rec, K_rec = recover_poses(
+    # Keep the official ray-pose fit in the evaluation path. The point map
+    # below intentionally uses the ray's native origin/direction representation
+    # so all geometry terms share one metric gauge.
+    recover_poses(
         ray_np, rc_np, input_size=(H, W),
         return_per_view_intrinsics=True,
     )
-    n_views = depth_tensor.shape[0]
-    d_hw = depth_tensor.squeeze(1).float().clamp(min=1e-3).cpu().numpy()
+    if ray_np.ndim != 4 or ray_np.shape[-1] != 6:
+        raise ValueError(f"expected ray shape (V,H,W,6), got {ray_np.shape}")
+    n_views, ray_h, ray_w = ray_np.shape[:3]
+
+    d_t = depth_tensor.float()
+    if d_t.ndim == 4:
+        d_t = d_t.squeeze(1)
+    if d_t.ndim != 3 or d_t.shape[0] != n_views:
+        raise ValueError(
+            f"depth/ray view mismatch: depth={tuple(d_t.shape)} ray={ray_np.shape}"
+        )
+    if d_t.shape[-2:] != (ray_h, ray_w):
+        d_t = F.interpolate(
+            d_t.unsqueeze(1), size=(ray_h, ray_w), mode="bilinear",
+            align_corners=False,
+        ).squeeze(1)
+    d_hw = d_t.clamp(min=1e-3).cpu().numpy()
+    points = ray_np[..., 3:] + d_hw[..., None] * ray_np[..., :3]
+
+    if rgb_imgs is None:
+        rgb_np = np.zeros((n_views, 3, ray_h, ray_w), dtype=np.float32)
+    else:
+        rgb_t = rgb_imgs.float()
+        if rgb_t.ndim != 4 or rgb_t.shape[0] != n_views:
+            raise ValueError(
+                f"rgb/ray view mismatch: rgb={tuple(rgb_t.shape)} ray={ray_np.shape}"
+            )
+        if rgb_t.shape[-2:] != (ray_h, ray_w):
+            rgb_t = F.interpolate(
+                rgb_t, size=(ray_h, ray_w), mode="bilinear", align_corners=False,
+            )
+        rgb_np = rgb_t.cpu().numpy()
+
     view_pcs: list[tuple[np.ndarray, np.ndarray]] = []
     for vi in range(n_views):
-        if rgb_imgs is None:
-            rgb_v = np.zeros((3, H, W), dtype=np.float32)
-        elif rgb_imgs.ndim == 4:
-            rgb_v = rgb_imgs[vi].detach().cpu().numpy()
-        else:
-            rgb_v = rgb_imgs.detach().cpu().numpy()
-        xyz, cols = _view_pointcloud_from_depth(
-            d_hw[vi], rgb_v, np.asarray(c2w_rec[vi], dtype=np.float64),
-            np.asarray(K_rec[vi], dtype=np.float64), stride=stride,
-        )
+        xyz_v = points[vi][::stride, ::stride]
+        depth_v = d_hw[vi][::stride, ::stride]
+        valid = np.isfinite(xyz_v).all(axis=-1) & (depth_v > 1e-3) & (depth_v < 100.0)
+        xyz = xyz_v[valid].astype(np.float64, copy=False)
+        rgb_hwc = np.transpose(rgb_np[vi], (1, 2, 0))
+        cols = (rgb_hwc[::stride, ::stride][valid] * 255.0).clip(0, 255).astype(np.uint8)
         view_pcs.append((xyz, cols))
     return view_pcs
 
