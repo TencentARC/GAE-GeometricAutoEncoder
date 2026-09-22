@@ -218,9 +218,9 @@ VGGT_CKPT=ckpts/vggt.pt PI3_CKPT=ckpts/pi3.pt \
 ```
 
 Run them from the repository root with `GAE_DATA_ROOT` set (see **Prepare
-RealEstate10K or DL3DV** below). `run_train.sh --help` / `run_eval.sh --help`
-list every flag; both forward extra arguments to the underlying `scripts/*.py`
-entry points documented below. A per-script command reference lives in
+RealEstate10K or DL3DV** below). `scripts/train/run_train.sh --help` /
+`scripts/eval/run_eval.sh --help` list every flag; both forward extra arguments
+to the underlying Python entry points documented below. A per-script command reference lives in
 [`scripts/README.md`](scripts/README.md).
 
 ### Prepare RealEstate10K or DL3DV
@@ -263,8 +263,8 @@ python scripts/train/train.py flow --size 64 --gpus 8
 python scripts/train/train.py flow --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
 ```
 
-The underlying entry points remain `train_codec.py` and `train_flow.py`; pass
-extra trainer arguments after `--`. Text-to-image is not a separate stage: it is
+The underlying entry points remain `scripts/train/train_codec.py` and
+`scripts/train/train_flow.py`; pass extra trainer arguments after `--`. Text-to-image is not a separate stage: it is
 co-trained *inside* the flow (i2v/t2v) model via `--cotrain-t2i`, which
 interleaves single-image T2I steps into the multi-view loop (data prepared in
 **Prepare RealEstate10K or DL3DV**; see [`docs/DATA.md`](docs/DATA.md)). The

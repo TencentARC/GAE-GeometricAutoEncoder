@@ -134,6 +134,7 @@ DATASET_DEFAULT_INTERVAL = {
     # matches training distribution. For test split dataset_test uses 3/50, but
     # 6 here keeps cross-ckpt comparison stable.
     "re10k_packed": 6,
+    "dl3dv_packed": 4,
 }
 
 
@@ -419,6 +420,8 @@ def collect_scenes(dataset, data_root, num_scenes, num_views, seed, interval=Non
     ``interval`` (int or None): frame spacing between neighbouring views.
     None → use ``DATASET_DEFAULT_INTERVAL``. Overridden by CLI ``--sample-interval``.
     """
+    if interval is None:
+        interval = DATASET_DEFAULT_INTERVAL.get(dataset)
     if dataset == "re10k":
         return collect_scenes_re10k(data_root, num_scenes, num_views, seed, interval=interval)
     elif dataset == "dl3dv":
@@ -427,7 +430,7 @@ def collect_scenes(dataset, data_root, num_scenes, num_views, seed, interval=Non
         return collect_scenes_mvssynth(data_root, num_scenes, num_views, seed, interval=interval)
     elif dataset == "scannetpp":
         return collect_scenes_scannetpp(data_root, num_scenes, num_views, seed, interval=interval)
-    elif dataset == "re10k_packed":
+    elif dataset in ("re10k_packed", "dl3dv_packed"):
         return collect_scenes_re10k_packed(data_root, num_scenes, num_views, seed, interval=interval)
     else:
         raise ValueError(f"Unknown dataset: {dataset}")

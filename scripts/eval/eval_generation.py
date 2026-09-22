@@ -1268,8 +1268,8 @@ def parse_args():
                    default="configs/flow_gae64.yaml")
     p.add_argument("--data-root", type=str, default=None)
     p.add_argument("--dataset", type=str, default="all",
-                   choices=["re10k", "re10k_packed", "dl3dv", "mvssynth",
-                            "scannetpp", "all"],
+                   choices=["re10k", "re10k_packed", "dl3dv", "dl3dv_packed",
+                            "mvssynth", "scannetpp", "all"],
                    help="dataset to evaluate (default: all). scannetpp + "
                         "re10k_packed both use <scene>/video.mp4 + meta.json "
                         "layout (pass --data-root to override the default root). "

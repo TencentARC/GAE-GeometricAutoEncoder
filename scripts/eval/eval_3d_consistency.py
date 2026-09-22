@@ -776,7 +776,8 @@ def parse_args():
                         "robust to ordering/seed drift).")
     p.add_argument("--data-root", default=None)
     p.add_argument("--dataset", default="re10k",
-                   choices=["re10k", "re10k_packed", "dl3dv", "mvssynth", "scannetpp"])
+                   choices=["re10k", "re10k_packed", "dl3dv", "dl3dv_packed",
+                            "mvssynth", "scannetpp"])
     p.add_argument("--scene-manifest", default=None,
                    help="JSON manifest with fixed scene list (matches the one "
                         "used by the diffusion eval).")
