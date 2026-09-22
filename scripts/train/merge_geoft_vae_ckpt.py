@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Merge a geo-decoder finetune checkpoint into a full GAE codec checkpoint.
 
-``scripts/finetune_geo_decoder.py`` saves only the trained module groups
+``scripts/train/finetune_geo_decoder.py`` saves only the trained module groups
 (``geo_adapter``, ``dec_conv``, and optionally the decode trunk / RGB head).
 Flow eval / training expect a complete codec checkpoint plus a codec config
 whose ``codec`` block instantiates the ``geo_adapter``. This utility
@@ -10,7 +10,7 @@ checkpoints.
 
 Example
 -------
-    python scripts/merge_geoft_vae_ckpt.py \
+    python scripts/train/merge_geoft_vae_ckpt.py \
         --geoft results/geoft/run0/geoft_002000.pt \
         --base-vae ckpts/gae_128.pt \
         --base-gld-config configs/gae_128.yaml \

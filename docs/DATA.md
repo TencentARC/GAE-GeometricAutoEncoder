@@ -26,12 +26,12 @@ RealEstate10K/
 OpenCV camera-to-world matrices.
 
 ```bash
-python scripts/prepare_data.py re10k \
+python scripts/data/prepare_data.py re10k \
   --source /datasets/RealEstate10K \
   --output "$GAE_DATA_ROOT/re10k_packed" \
   --split train --workers 8
 
-python scripts/prepare_data.py re10k \
+python scripts/data/prepare_data.py re10k \
   --source /datasets/RealEstate10K \
   --output "$GAE_DATA_ROOT/re10k_packed" \
   --split test --workers 8
@@ -54,7 +54,7 @@ OpenCV. Intrinsics are rescaled from the dimensions in `transforms.json` to
 the actual `images_4` dimensions.
 
 ```bash
-python scripts/prepare_data.py dl3dv \
+python scripts/data/prepare_data.py dl3dv \
   --source /datasets/DL3DV-10K \
   --output "$GAE_DATA_ROOT/dl3dv_packed" \
   --workers 8
@@ -75,7 +75,7 @@ scannetpp/<scene>/
 
 ```bash
 for i in $(seq 0 7); do
-  python scripts/preprocess_scannetpp.py \
+  python scripts/data/preprocess_scannetpp.py \
     --source /datasets/scannetpp --output "$GAE_DATA_ROOT/scannetpp_preprocessed" \
     --num-frames 256 --resolution 504 --depth-resolution 192 \
     --num-shards 8 --shard-index $i &
@@ -100,7 +100,7 @@ MVS-Synth/GTAV_540/<scene>/
 The `extrinsic` is world-to-camera; the packer stores `c2w = inv(extrinsic)`.
 
 ```bash
-python scripts/preprocess_mvssynth.py \
+python scripts/data/preprocess_mvssynth.py \
   --source /datasets/MVS-Synth/GTAV_540 --output "$GAE_DATA_ROOT/mvssynth_packed"
 ```
 
@@ -111,12 +111,12 @@ require `meta_da3_metric.json`, generated with DA3NESTED:
 
 ```bash
 # RE10K train and test
-python scripts/export_da3_metric_poses.py \
+python scripts/data/export_da3_metric_poses.py \
   --dataset re10k_packed --root "$GAE_DATA_ROOT/re10k_packed" \
   --device cuda:0 --skip-existing
 
 # DL3DV
-python scripts/export_da3_metric_poses.py \
+python scripts/data/export_da3_metric_poses.py \
   --dataset dl3dv_packed --root "$GAE_DATA_ROOT/dl3dv_packed" \
   --device cuda:0 --skip-existing
 ```
@@ -127,8 +127,8 @@ Long scenes are split into checkpoint-compatible chunks. RE10K drops the last
 For network-backed datasets, pre-build loader indexes before launching many ranks:
 
 ```bash
-python scripts/build_dataset_index.py --config configs/gae_64.yaml
-python scripts/build_dataset_index.py --config configs/flow_gae64.yaml
+python scripts/data/build_dataset_index.py --config configs/gae_64.yaml
+python scripts/data/build_dataset_index.py --config configs/flow_gae64.yaml
 ```
 
 
@@ -136,11 +136,11 @@ python scripts/build_dataset_index.py --config configs/flow_gae64.yaml
 
 Stage 2 standardizes the codec posterior mean (Eq. 15) using per-channel
 mean/std saved to `ckpts/latent_stats_gae_64.pt` (the path the flow configs
-read). Download it with `scripts/download_checkpoints.py`, or compute it for a
+read). Download it with `scripts/demo/download_checkpoints.py`, or compute it for a
 codec you trained:
 
 ```bash
-python scripts/compute_latent_stats.py \
+python scripts/train/compute_latent_stats.py \
   --config configs/gae_64.yaml --codec-ckpt ckpts/gae_64.pt \
   --num-batches 500 --output ckpts/latent_stats_gae_64.pt
 ```
@@ -173,7 +173,7 @@ Both the Stage 2 flow (i2v/t2v) model and the Stage 1 codec can co-train a
 single-image **text-to-image** branch on this data. In the flow it keeps text
 conditioning intact during i2v training (`--cotrain-t2i`); in the codec
 (`cotrain_t2i` in `configs/gae_64.yaml`) it makes the RGB head usable for pure
-prompt -> image generation (`scripts/generate_t2i.py`).
+prompt -> image generation (`scripts/demo/generate_t2i.py`).
 The branch reads two raw sources through the loaders in `src/data`, so no
 bespoke format is needed:
 
@@ -181,12 +181,12 @@ bespoke format is needed:
 * **ImageNet-1k** as Hugging Face Arrow, captioned by class name
   (`src/data/imagenet_arrow.py`, using `src/data/imagenet_classes.py`)
 
-Prepare both under `$GAE_DATA_ROOT` with `scripts/prepare_t2i_data.py`.
+Prepare both under `$GAE_DATA_ROOT` with `scripts/data/prepare_t2i_data.py`.
 
 ### 1. BLIP3o-Pretrain (WebDataset)
 
 ```bash
-python scripts/prepare_t2i_data.py blip3o \
+python scripts/data/prepare_t2i_data.py blip3o \
   --output "$GAE_DATA_ROOT/BLIP3o" \
   --splits long short journeydb
 ```
@@ -210,7 +210,7 @@ data elsewhere.
 run `huggingface-cli login` first, then materialize the Arrow cache:
 
 ```bash
-python scripts/prepare_t2i_data.py imagenet --mode arrow \
+python scripts/data/prepare_t2i_data.py imagenet --mode arrow \
   --output "$GAE_DATA_ROOT/imagenet-1k"
 ```
 
@@ -223,7 +223,7 @@ local ImageNet `train` directory (`<source>/<wnid>/*.JPEG`) into BLIP3o-style
 tar shards with class-name captions:
 
 ```bash
-python scripts/prepare_t2i_data.py imagenet --mode wds \
+python scripts/data/prepare_t2i_data.py imagenet --mode wds \
   --source /datasets/imagenet/train \
   --output "$GAE_DATA_ROOT/Blip3o_style/ImageNet-1K-T2I"
 ```
@@ -237,7 +237,7 @@ The `imagenet` split then resolves from any `data_dir` root that contains an
 Confirm a config's `cotrain_t2i` sources resolve to real data:
 
 ```bash
-python scripts/prepare_t2i_data.py verify --config configs/gae_64.yaml
+python scripts/data/prepare_t2i_data.py verify --config configs/gae_64.yaml
 ```
 
 It reports each split's tar count (or the ImageNet Arrow status) so you can fix
@@ -247,13 +247,13 @@ paths before launching a multi-GPU run.
 
 ```bash
 # T2I co-trained inside the flow (i2v) model:
-python scripts/train.py flow --size 64 --gpus 8 --cotrain-t2i
+python scripts/train/train.py flow --size 64 --gpus 8 --cotrain-t2i
 
 # Optional: the same data can text-align the Stage 1 codec RGB head:
-COTRAIN_T2I=1 python scripts/train.py codec --size 64 --gpus 8
+COTRAIN_T2I=1 python scripts/train/train.py codec --size 64 --gpus 8
 ```
 
 `--cotrain-t2i` interleaves one single-image T2I step into the i2v loop (tune
 with `--t2i-every-k`, `>= 2`). The codec's own `cotrain_t2i` block is enabled via
 the config or `COTRAIN_T2I=1`; after codec co-training you can sample images
-directly from the RGB head with `scripts/generate_t2i.py` (see `scripts/README.md`).
+directly from the RGB head with `scripts/demo/generate_t2i.py` (see `scripts/README.md`).

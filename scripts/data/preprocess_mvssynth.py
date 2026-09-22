@@ -27,7 +27,7 @@ Notes
 
 Usage::
 
-    python scripts/preprocess_mvssynth.py \
+    python scripts/data/preprocess_mvssynth.py \
         --source /datasets/MVS-Synth/GTAV_540 \
         --output "$GAE_DATA_ROOT/mvssynth_packed"
 """

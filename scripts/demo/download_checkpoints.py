@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Download GAE checkpoints from the Hugging Face Hub.
 
-Default repo is ``TencentARC/GAE-D64-1B``. ``scripts/run_demo.sh`` calls this
+Default repo is ``TencentARC/GAE-D64-1B``. ``scripts/demo/run_demo.sh`` calls this
 when ``ckpts/`` is empty.
 
 Examples
 --------
-    python scripts/download_checkpoints.py
-    python scripts/download_checkpoints.py --size 64 --out-dir ckpts
-    python scripts/download_checkpoints.py --list
+    python scripts/demo/download_checkpoints.py
+    python scripts/demo/download_checkpoints.py --size 64 --out-dir ckpts
+    python scripts/demo/download_checkpoints.py --list
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 from typing import Optional, Sequence
 
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parents[2]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 

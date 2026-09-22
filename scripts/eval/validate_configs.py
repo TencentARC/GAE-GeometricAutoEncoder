@@ -11,11 +11,11 @@ import importlib
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from omegaconf import OmegaConf  # noqa: E402
 
-CFG_DIR = Path(__file__).resolve().parent.parent / "configs"
+CFG_DIR = Path(__file__).resolve().parents[2] / "configs"
 
 
 def check_target(dotted: str) -> tuple[bool, str]:

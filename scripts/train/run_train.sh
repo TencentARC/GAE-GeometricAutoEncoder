@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # One-click GAE training.
 #
-#   Stage 1  codec  ->  configs/gae_<size>.yaml       (scripts/train_codec.py)
-#   Stage 2  flow   ->  configs/flow_gae<size>.yaml    (scripts/train_flow.py)
+#   Stage 1  codec  ->  configs/gae_<size>.yaml       (scripts/train/train_codec.py)
+#   Stage 2  flow   ->  configs/flow_gae<size>.yaml    (scripts/train/train_flow.py)
 #
 # Flow training standardizes the codec posterior mean (paper Eq. 15) and reads
 # ckpts/latent_stats_gae_<size>.pt. If that file is missing this script computes
 # it from a codec checkpoint before launching the flow trainer.
 #
 # Usage:
-#   scripts/run_train.sh [options] [-- extra trainer args]
+#   scripts/train/run_train.sh [options] [-- extra trainer args]
 #
 #   --size {64|128}            latent dim                        (default: 64)
 #   --stage {codec|flow|both}  what to train                     (default: codec)
@@ -22,16 +22,16 @@
 #   -h, --help
 #
 # Anything after '--' is forwarded verbatim to the underlying trainer, e.g.
-#   scripts/run_train.sh --stage flow --size 64 -- --results-dir results/my-run
+#   scripts/train/run_train.sh --stage flow --size 64 -- --results-dir results/my-run
 #
 # Examples:
-#   scripts/run_train.sh --stage codec --size 64  --gpus 8
-#   scripts/run_train.sh --stage flow  --size 128 --gpus 8 --cotrain-t2i
-#   scripts/run_train.sh --stage both  --size 64  --codec-ckpt ckpts/gae_64.pt
+#   scripts/train/run_train.sh --stage codec --size 64  --gpus 8
+#   scripts/train/run_train.sh --stage flow  --size 128 --gpus 8 --cotrain-t2i
+#   scripts/train/run_train.sh --stage both  --size 64  --codec-ckpt ckpts/gae_64.pt
 set -euo pipefail
 
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
 SIZE=64
@@ -72,7 +72,7 @@ run() { echo "[run_train] + $*"; "$@"; }
 
 train_codec() {
   echo "[run_train] === Stage 1 codec (d${SIZE}) ==="
-  run python scripts/train.py codec --size "$SIZE" --gpus "$GPUS" "${EXTRA[@]}"
+  run python scripts/train/train.py codec --size "$SIZE" --gpus "$GPUS" "${EXTRA[@]}"
 }
 
 ensure_latent_stats() {
@@ -81,10 +81,10 @@ ensure_latent_stats() {
     return
   fi
   echo "[run_train] latent stats missing: $STATS_PT"
-  [[ -f "$CODEC_CKPT" ]] || die "cannot build latent stats: codec ckpt not found at '$CODEC_CKPT' (pass --codec-ckpt, or fetch stats with scripts/download_checkpoints.py)"
+  [[ -f "$CODEC_CKPT" ]] || die "cannot build latent stats: codec ckpt not found at '$CODEC_CKPT' (pass --codec-ckpt, or fetch stats with scripts/demo/download_checkpoints.py)"
   echo "[run_train] computing latent stats from $CODEC_CKPT ..."
   mkdir -p "$(dirname "$STATS_PT")"
-  run python scripts/compute_latent_stats.py \
+  run python scripts/train/compute_latent_stats.py \
     --config "$CODEC_CFG" --codec-ckpt "$CODEC_CKPT" \
     --num-batches "$STATS_BATCHES" --output "$STATS_PT"
 }
@@ -94,7 +94,7 @@ train_flow() {
   ensure_latent_stats
   local args=(flow --size "$SIZE" --gpus "$GPUS")
   [[ "$COTRAIN_T2I" == "1" ]] && args+=(--cotrain-t2i)
-  run python scripts/train.py "${args[@]}" "${EXTRA[@]}"
+  run python scripts/train/train.py "${args[@]}" "${EXTRA[@]}"
 }
 
 case "$STAGE" in

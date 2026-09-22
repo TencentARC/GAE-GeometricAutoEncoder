@@ -547,7 +547,7 @@ class TemporalGeoAdapter(nn.Module):
     ``dec_conv`` -> DPT) consumes ``z_geo``; the RGB head keeps decoding from the
     original ``z`` so refining geometry never perturbs RGB. The scalar gate is
     zero-init, so the module is an exact identity until finetuned
-    (``scripts/finetune_geo_decoder.py``). Supports variable ``V``.
+    (``scripts/train/finetune_geo_decoder.py``). Supports variable ``V``.
     """
 
     def __init__(self, channels, hidden_ratio=2.0, num_heads=4, max_views=64,
@@ -1045,7 +1045,7 @@ class GAECodec(nn.Module):
         """L_feat + lambda_kl * L_kl — the first two terms of paper Eq. (12).
 
         L_rgb / L_geo / L_repr are added by the training loop (see
-        ``scripts/train_codec.py``) because they need extra teachers/targets.
+        ``scripts/train/train_codec.py``) because they need extra teachers/targets.
         """
         recon = output["recon"]
         mu, logvar = output["mu"], output["logvar"]

@@ -36,7 +36,7 @@ def test_prepare_re10k_schema(tmp_path: Path) -> None:
     output = tmp_path / "out"
 
     subprocess.run(
-        [sys.executable, str(ROOT / "scripts" / "prepare_data.py"), "re10k",
+        [sys.executable, str(ROOT / "scripts" / "data" / "prepare_data.py"), "re10k",
          "--source", str(source), "--output", str(output),
          "--split", "train", "--workers", "1", "--limit", "1"],
         check=True, cwd=ROOT,

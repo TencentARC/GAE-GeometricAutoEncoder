@@ -8,15 +8,15 @@ LNC@k (semantic organisation), LDS / CDS / SRSS (spatial structure).
 Examples
 --------
     # a [N, C, H, W] tensor plus an optional [N] label tensor
-    python scripts/eval_latent.py --latents z.pt --labels y.pt
+    python scripts/eval/eval_latent.py --latents z.pt --labels y.pt
 
     # several latents side by side, each with its own tag
-    python scripts/eval_latent.py \\
+    python scripts/eval/eval_latent.py \\
         --latents gae64=z.pt gae128=z128.pt sdvae=z_sd.pt \\
         --image-res 252
 
     # skip the O(N^2) spatial metrics on large grids
-    python scripts/eval_latent.py --latents z.pt --no-structure
+    python scripts/eval/eval_latent.py --latents z.pt --no-structure
 """
 
 from __future__ import annotations
@@ -27,8 +27,8 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-for _p in (str(_REPO_ROOT / "src"), str(_REPO_ROOT / "scripts")):
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+for _p in (str(_REPO_ROOT / "src"), str(_REPO_ROOT / "scripts" / "eval")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 

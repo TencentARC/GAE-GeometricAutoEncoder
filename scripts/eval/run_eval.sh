@@ -16,7 +16,7 @@
 # with VGGT_CKPT / DA3_CKPT / PI3_CKPT env vars.
 #
 # Usage:
-#   scripts/run_eval.sh [options]
+#   scripts/eval/run_eval.sh [options]
 #
 #   --size {64|128}     latent dim                                (default: 64)
 #   --tasks LIST        comma-separated task list                 (default: recon,latent,gen)
@@ -30,16 +30,16 @@
 # Checkpoints are expected at:
 #   ckpts/gae_<size>.pt         codec
 #   ckpts/flow_gae<size>.pt     flow
-# (fetch with scripts/download_checkpoints.py)
+# (fetch with scripts/demo/download_checkpoints.py)
 #
 # Examples:
-#   scripts/run_eval.sh --size 64
-#   scripts/run_eval.sh --size 128 --tasks recon,latent --dataset dl3dv_packed
-#   VGGT_CKPT=ckpts/vggt.pt PI3_CKPT=ckpts/pi3.pt scripts/run_eval.sh --tasks gen,consistency,met3r,geometry
+#   scripts/eval/run_eval.sh --size 64
+#   scripts/eval/run_eval.sh --size 128 --tasks recon,latent --dataset dl3dv_packed
+#   VGGT_CKPT=ckpts/vggt.pt PI3_CKPT=ckpts/pi3.pt scripts/eval/run_eval.sh --tasks gen,consistency,met3r,geometry
 set -euo pipefail
 
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
 SIZE=64
@@ -85,14 +85,14 @@ VIEW_ARGS=();  [[ -n "$NUM_VIEWS" ]]  && VIEW_ARGS+=(--num-views "$NUM_VIEWS")
 mkdir -p "$OUT"
 run() { echo "[run_eval] + $*"; "$@"; }
 have() { [[ ",$TASKS," == *",$1,"* ]]; }
-need_ckpt() { [[ -f "$1" ]] || die "missing checkpoint: $1 (fetch with scripts/download_checkpoints.py)"; }
+need_ckpt() { [[ -f "$1" ]] || die "missing checkpoint: $1 (fetch with scripts/demo/download_checkpoints.py)"; }
 
 echo "[run_eval] size=d${SIZE} dataset=${DATASET} data_root=${DATA_ROOT} out=${OUT} tasks=${TASKS}"
 
 if have recon; then
   echo "[run_eval] === recon (Table 3) ==="
   need_ckpt "$VAE"
-  run python scripts/eval_reconstruction.py \
+  run python scripts/eval/eval_reconstruction.py \
     --config "$CODEC_CFG" --vae-ckpt "$VAE" \
     --dataset "$DATASET" --data-root "$TEST_DIR" \
     --output-dir "$OUT/recon" "${SCENE_ARGS[@]}" "${VIEW_ARGS[@]}"
@@ -101,17 +101,17 @@ fi
 if have latent; then
   echo "[run_eval] === latent diagnostics (Tables 1,2) ==="
   need_ckpt "$VAE"
-  run python scripts/encode_latents.py \
+  run python scripts/eval/encode_latents.py \
     --input "$TEST_DIR" --config "$CODEC_CFG" --codec-ckpt "$VAE" \
     --output "$OUT/latents.pt"
-  run python scripts/eval_latent.py \
+  run python scripts/eval/eval_latent.py \
     --latents "gae${SIZE}=$OUT/latents.pt" --json "$OUT/latent_metrics.json"
 fi
 
 if have gen || have consistency || have met3r || have geometry; then
   echo "[run_eval] === generation (Table 5) + dumps ==="
   need_ckpt "$VAE"; need_ckpt "$DIT"
-  run python scripts/eval_generation.py \
+  run python scripts/eval/eval_generation.py \
     --config "$FLOW_CFG" --dit-ckpt "$DIT" --vae-ckpt "$VAE" \
     --dataset "$DATASET" --data-root "$DATA_ROOT" \
     --output-dir "$OUT/gen" --save-pointcloud --dump-geometry \
@@ -124,12 +124,12 @@ if have consistency; then
         --output-name "$OUT/consistency.json" --csv-output "$OUT/consistency.csv")
   [[ -n "${VGGT_CKPT:-}" ]] && args+=(--vggt-ckpt "$VGGT_CKPT")
   [[ -n "${DA3_CKPT:-}" ]]  && args+=(--da3-ckpt "$DA3_CKPT")
-  run python scripts/eval_3d_consistency.py "${args[@]}"
+  run python scripts/eval/eval_3d_consistency.py "${args[@]}"
 fi
 
 if have met3r; then
   echo "[run_eval] === MEt3R (Table 6) ==="
-  run python scripts/eval_met3r.py \
+  run python scripts/eval/eval_met3r.py \
     --pred-dir "$OUT/gen" --output "$OUT/met3r.json" --csv-output "$OUT/met3r.csv"
 fi
 
@@ -139,7 +139,7 @@ if have geometry; then
   [[ -n "${PI3_CKPT:-}" ]]  && args+=(--pi3-ckpt "$PI3_CKPT")
   [[ -n "${VGGT_CKPT:-}" ]] && args+=(--vggt-ckpt "$VGGT_CKPT")
   [[ -n "${DA3_CKPT:-}" ]]  && args+=(--da3-ckpt "$DA3_CKPT")
-  run python scripts/eval_geometry.py "${args[@]}"
+  run python scripts/eval/eval_geometry.py "${args[@]}"
 fi
 
 echo "[run_eval] done. results under $OUT/"

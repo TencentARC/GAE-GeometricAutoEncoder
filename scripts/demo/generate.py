@@ -6,7 +6,7 @@ creates the small scene manifest expected by the research evaluator, then runs
 the released GAE flow sampler.
 
 Example:
-    python scripts/generate.py \
+    python scripts/demo/generate.py \
         --image examples/scenes/forest_lake_trail.jpg \
         --prompt-file examples/scenes/forest_lake_trail.txt \
         --hf-repo TencentARC/GAE-D64-1B \
@@ -24,7 +24,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -219,7 +219,7 @@ def main() -> int:
     poses_path = _resolve_poses_path(args)
     manifest = _prepare_scene(args, poses_path)
     env = os.environ.copy()
-    env["PYTHONPATH"] = f"{ROOT / 'src'}:{ROOT / 'scripts'}:{env.get('PYTHONPATH', '')}"
+    env["PYTHONPATH"] = f"{ROOT / 'src'}:{ROOT / 'scripts' / 'eval'}:{env.get('PYTHONPATH', '')}"
     env.pop("FREE_ROLLOUT", None)
     if poses_path is None:
         env.update({
@@ -229,7 +229,7 @@ def main() -> int:
             "FREE_ROLLOUT_SPEED": str(args.speed),
         })
     command = [
-        sys.executable, str(ROOT / "scripts/eval_generation.py"),
+        sys.executable, str(ROOT / "scripts/eval/eval_generation.py"),
         "--dit-ckpt", str(args.flow_ckpt),
         "--vae-ckpt", str(args.codec_ckpt),
         "--gld-config", str(args.codec_config),

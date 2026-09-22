@@ -1,10 +1,10 @@
-"""NOT A PUBLIC ENTRY POINT. Use scripts/train_flow.py.
+"""NOT A PUBLIC ENTRY POINT. Use scripts/train/train_flow.py.
 Kept so historical helpers remain importable; prefer src/utils/train_runtime.py.
 
 
 Flow trainer — Token-Concat conditioning, **precomputed latent** path.
 
-Differences vs the standard flow trainer (``scripts/train_flow.py``):
+Differences vs the standard flow trainer (``scripts/train/train_flow.py``):
 
   * No DA3 (RAE) loaded.
   * No FeatureVAE loaded (training does NOT need encoder/decoder).

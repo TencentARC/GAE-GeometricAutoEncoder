@@ -6,12 +6,12 @@ family and ``load_scenes_from_manifest``, which turn a dataset root into a list
 of scenes with frames and camera sidecars.
 
 In the release this module is used as a data helper only; the evaluation entry
-points are ``scripts/eval_generation.py`` and friends. It retains the original
+points are ``scripts/eval/eval_generation.py`` and friends. It retains the original
 standalone evaluation CLI it was extracted from.
 
 Run from the repo root so that ``src/`` is importable:
 
-    PYTHONPATH=src python scripts/eval_data.py --help
+    PYTHONPATH=src python scripts/eval/eval_data.py --help
 """
 
 
@@ -22,7 +22,7 @@ import sys
 import random
 
 os.environ.setdefault("TMPDIR", "/tmp")
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
@@ -110,7 +110,7 @@ def parse_args():
 
 _DATA_ROOT = os.environ.get("GAE_DATA_ROOT", "/data/gae")
 DATASET_ROOTS = {
-    # Packed roots produced by scripts/prepare_data.py (see docs/DATA.md).
+    # Packed roots produced by scripts/data/prepare_data.py (see docs/DATA.md).
     "re10k_packed": os.path.join(_DATA_ROOT, "re10k_packed/test"),
     "dl3dv_packed": os.path.join(_DATA_ROOT, "dl3dv_packed"),
     "scannetpp": os.path.join(_DATA_ROOT, "scannetpp_preprocessed"),
@@ -1242,7 +1242,7 @@ def main():
     except ImportError as exc:
         raise SystemExit(
             "eval_data.py is a helper module in the public release; "
-            "use scripts/eval_generation.py instead"
+            "use scripts/eval/eval_generation.py instead"
         ) from exc
     args = parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

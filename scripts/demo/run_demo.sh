@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # One-click demo: venv + weights from Hugging Face + bundled example scenes.
 #
-#   bash scripts/run_demo.sh
-#   bash scripts/run_demo.sh --smoke
-#   bash scripts/run_demo.sh --task i2v -- --trajectory orbit
+#   bash scripts/demo/run_demo.sh
+#   bash scripts/demo/run_demo.sh --smoke
+#   bash scripts/demo/run_demo.sh --task i2v -- --trajectory orbit
 #
 # Options:
 #   --size {64|128}       checkpoint pair (default: 64)
@@ -20,7 +20,7 @@
 # Env: GAE_HF_REPO (default TencentARC/GAE-D64-1B), HF_TOKEN, PYTHON.
 set -euo pipefail
 
-cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 SIZE=64
 TASK=all
@@ -114,7 +114,7 @@ done
 if [[ "$need" == "1" ]]; then
   [[ "$SKIP_DOWNLOAD" == "1" ]] && die "missing weights under $CKPT_DIR"
   echo "[run_demo] downloading $HF_REPO -> $CKPT_DIR"
-  run python scripts/download_checkpoints.py --repo "$HF_REPO" --size "$SIZE" --out-dir "$CKPT_DIR"
+  run python scripts/demo/download_checkpoints.py --repo "$HF_REPO" --size "$SIZE" --out-dir "$CKPT_DIR"
 fi
 
 mkdir -p model_stats/da3_giant_5ds
@@ -143,7 +143,7 @@ run_i2v() {
     prompt="examples/scenes/${name}.txt"
     [[ -f "$prompt" ]] || die "missing $prompt"
     echo "[run_demo] --- $name ---"
-    run python scripts/generate.py \
+    run python scripts/demo/generate.py \
       --image "$img" --prompt-file "$prompt" \
       --flow-ckpt "$FLOW_CKPT" --codec-ckpt "$CODEC_CKPT" \
       --config "$FLOW_CFG" --codec-config "$CODEC_CFG" \
@@ -156,7 +156,7 @@ run_t2i() {
   local prompts=examples/t2i_prompts.txt
   [[ -f "$prompts" ]] || die "missing $prompts"
   echo "[run_demo] T2I: $prompts, GAE-${SIZE}"
-  run python scripts/generate_t2i.py \
+  run python scripts/demo/generate_t2i.py \
     --config "$FLOW_CFG" --flow-ckpt "$FLOW_CKPT" --codec-ckpt "$CODEC_CKPT" \
     --prompts-file "$prompts" --output "$OUT/t2i" --save-pointcloud \
     --guidance "$T2I_GUIDANCE" --ig-scale "$T2I_IG_SCALE"

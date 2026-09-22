@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Encode images or packed videos into posterior-mean GAE latents.
 
-The output can be passed directly to ``scripts/eval_latent.py``.
+The output can be passed directly to ``scripts/eval/eval_latent.py``.
 
 Examples:
-    python scripts/encode_latents.py \
+    python scripts/eval/encode_latents.py \
         --input /data/gae/re10k_packed/test \
         --config configs/gae_64.yaml --codec-ckpt ckpts/gae_64.pt \
         --output results/re10k_gae64_latents.pt --max-scenes 100
 
-    python scripts/eval_latent.py \
+    python scripts/eval/eval_latent.py \
         --latents gae64=results/re10k_gae64_latents.pt
 """
 from __future__ import annotations
@@ -23,7 +23,7 @@ import numpy as np
 import torch
 from omegaconf import OmegaConf
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 

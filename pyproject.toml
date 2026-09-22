@@ -40,14 +40,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Only needed by the geometry evaluation entry points (scripts/eval_geometry.py,
-# scripts/eval_3d_consistency.py), which call external estimators.
+# Only needed by the geometry evaluation entry points (scripts/eval/eval_geometry.py,
+# scripts/eval/eval_3d_consistency.py), which call external estimators.
 eval = [
     "evo",
     "pycolmap",
     # External geometry evaluators, imported lazily by the eval entry
-    # points: VGGT (scripts/eval_3d_consistency.py), MEt3R
-    # (scripts/eval_met3r.py) and Pi3 (scripts/eval_geometry.py).
+    # points: VGGT (scripts/eval/eval_3d_consistency.py), MEt3R
+    # (scripts/eval/eval_met3r.py) and Pi3 (scripts/eval/eval_geometry.py).
     # torch_dct is optional too: src/metrics/latent.py ships a pure-torch
     # DCT fallback that gives identical results when it is absent.
 ]

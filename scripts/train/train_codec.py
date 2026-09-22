@@ -21,7 +21,7 @@ The two L_struct variants are both available:
   Kept for the ablation in Table 2; leave at 0 for the paper configuration.
 
 Usage:
-    torchrun --nproc_per_node=N scripts/train_codec.py \
+    torchrun --nproc_per_node=N scripts/train/train_codec.py \
         --config configs/gae_64.yaml
 """
 from __future__ import annotations
@@ -36,7 +36,7 @@ import tempfile
 from pathlib import Path as _Path
 
 # Allow running as a script from the repo root: make src/ importable.
-sys.path.insert(0, str(_Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(_Path(__file__).resolve().parents[2] / "src"))
 
 os.environ.setdefault("TMPDIR", "/tmp")
 tempfile.tempdir = "/tmp"
@@ -496,7 +496,7 @@ _HF_TO_LOCAL_DA3 = {
 
 def _resolve_da3_encoder_path(pretrained_path, da3_weights_path=None):
     """Prefer a local ``pretrained_models/`` dir (config.json + weights) over HF Hub."""
-    proj_root = os.path.dirname(ROOT)  # ROOT = .../src
+    proj_root = str(_Path(__file__).resolve().parents[2])
     candidates = []
     if pretrained_path:
         candidates.append(pretrained_path)

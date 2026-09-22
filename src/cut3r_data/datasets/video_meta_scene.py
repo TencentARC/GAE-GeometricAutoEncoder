@@ -74,7 +74,7 @@ class VideoMetaScene_Multi(BaseMultiViewDataset):
 
     Args:
         ROOT:               Output dir of the dataset preprocessing scripts
-                            (e.g. ``scripts/prepare_data.py``).
+                            (e.g. ``scripts/data/prepare_data.py``).
         dataset_tag:        Short string identifier mixed into index cache key
                             so RE10K / DL3DV / MVSSynth indices don't collide
                             even if their ROOT happens to share a prefix.

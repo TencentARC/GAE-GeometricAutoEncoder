@@ -14,14 +14,14 @@ operator used by the text-to-image recipe.
 
 Example
 -------
-    python scripts/compute_latent_stats.py \
+    python scripts/train/compute_latent_stats.py \
         --config configs/gae_64.yaml \
         --codec-ckpt ckpts/gae_64.pt \
         --num-batches 500 \
         --output ckpts/latent_stats_gae_64.pt
 
     # Only have RE10K? Restrict the sampling distribution:
-    python scripts/compute_latent_stats.py --config configs/gae_64.yaml \
+    python scripts/train/compute_latent_stats.py --config configs/gae_64.yaml \
         --codec-ckpt ckpts/gae_64.pt --dataset dataset_re10k \
         --output latent_stats/gae_64_re10k.pt
 
@@ -37,7 +37,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parents[2]
 for _p in (_ROOT, _ROOT / "src"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))

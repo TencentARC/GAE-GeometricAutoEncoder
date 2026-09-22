@@ -19,7 +19,7 @@ reference-conditioned NVS regimes.
 comparison latents from the paper's tables.
 
 Usage:
-    torchrun --nproc_per_node=8 scripts/train_flow.py \
+    torchrun --nproc_per_node=8 scripts/train/train_flow.py \
         --config configs/flow_gae64.yaml \
         --results-dir results/gae-64-re10k
 
@@ -66,12 +66,12 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from tqdm import tqdm
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT = os.path.dirname(ROOT)
+REPO_ROOT = os.path.dirname(os.path.dirname(ROOT))
 SRC_DIR = os.path.join(REPO_ROOT, "src")
-for _p in (SRC_DIR, ROOT, os.path.join(REPO_ROOT, "scripts")):
+for _p in (SRC_DIR, ROOT, os.path.join(REPO_ROOT, "scripts", "eval"), os.path.join(REPO_ROOT, "scripts", "train")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-SCRIPTS = os.path.join(os.path.dirname(ROOT), "scripts")
+SCRIPTS = os.path.join(REPO_ROOT, "scripts")
 if SCRIPTS not in sys.path:
     sys.path.insert(0, SCRIPTS)
 
@@ -147,7 +147,7 @@ def _resolve_da3_encoder_path(pretrained_path, da3_weights_path=None):
     handshake (``httpx.ConnectTimeout``) and aborts the whole run at startup.
     Loading from a local dir (config.json + model.safetensors) is fully offline.
     """
-    proj_root = os.path.dirname(ROOT)  # ROOT = .../src
+    proj_root = REPO_ROOT
     candidates = []
     if pretrained_path:
         candidates.append(pretrained_path)
@@ -181,7 +181,7 @@ def _resolve_text_model_path(model_name):
     otherwise hits the HF Hub for every node's local-rank-0, and a cold cache +
     flaky egress fails the TLS handshake (``httpx.ConnectTimeout``) at startup.
     """
-    proj_root = os.path.dirname(ROOT)  # ROOT = .../src
+    proj_root = REPO_ROOT
     candidates = [model_name]
     mapped = _HF_TO_LOCAL_TEXT.get(model_name)
     if mapped:

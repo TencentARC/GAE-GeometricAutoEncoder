@@ -23,14 +23,14 @@ This repository ships two Pexels scenes (Pexels License):
 Run a scene through the generator:
 
 ```bash
-python scripts/generate.py \
+python scripts/demo/generate.py \
   --image examples/scenes/forest_lake_trail.jpg \
   --prompt-file examples/scenes/forest_lake_trail.txt \
   --hf-repo TencentARC/GAE-D64-1B \
   --output results/forest --total-views 81
 ```
 
-`scripts/generate.py` loads `<name>_poses.npz` next to the image when it exists
+`scripts/demo/generate.py` loads `<name>_poses.npz` next to the image when it exists
 (the recorded eval cameras). Pass `--free-rollout` or `--trajectory orbit|spiral|drive|wander`
 to ignore GT poses and synthesize a path instead.
 
@@ -41,7 +41,7 @@ prompts live in a flat list (`t2i_prompts.txt`, one per line) rather than under
 `scenes/`. Drive the codec RGB head (plus DPT depth / ply by default) with them:
 
 ```bash
-python scripts/generate_t2i.py \
+python scripts/demo/generate_t2i.py \
   --hf-repo TencentARC/GAE-D64-1B \
   --prompts-file examples/t2i_prompts.txt --output results/t2i
 ```

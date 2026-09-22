@@ -4,7 +4,7 @@ Evaluate **NGD's native (direct) geometry** against external reconstructions.
 
 Motivation
 ──────────
-`scripts/eval_3d_consistency.py` answers a *different* question: it takes the
+`scripts/eval/eval_3d_consistency.py` answers a *different* question: it takes the
 **generated RGB video** and runs an external estimator (VGGT / DA3) on it to
 recover pose/depth/points, then scores that reconstruction. It never touches
 NGD's own geometry head.
@@ -65,7 +65,7 @@ Usage
     cd /path/to/GLD
 
     # 1) dump geometry during the normal v4 recon eval
-    PYTHONPATH=src uv run python scripts/eval_generation.py \
+    PYTHONPATH=src uv run python scripts/eval/eval_generation.py \
         --dit-ckpt <ckpt> --mode recon --dump-geometry \
         --output-dir results/eval_v4_geom --dataset re10k --num-views 8
 
@@ -88,8 +88,9 @@ import sys
 
 os.environ.setdefault("TMPDIR", "/tmp")
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC_ROOT = os.path.join(ROOT, "src")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, SRC_ROOT)
 
@@ -98,7 +99,7 @@ import torch
 import torch.nn.functional as F
 
 # Reuse the battle-tested estimator wrappers + pose/point helpers.
-from scripts.eval_3d_consistency import (
+from eval_3d_consistency import (
     _as_4x4_extrinsics,
     _depth_to_world_points,
     _load_da3,

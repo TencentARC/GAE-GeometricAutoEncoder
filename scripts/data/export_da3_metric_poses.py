@@ -6,10 +6,10 @@ modifying the original poses.
 
 Usage::
 
-    python scripts/export_da3_metric_poses.py \\
+    python scripts/data/export_da3_metric_poses.py \\
         --dataset re10k_packed --split train --max-scenes 1
 
-    python scripts/export_da3_metric_poses.py \\
+    python scripts/data/export_da3_metric_poses.py \\
         --datasets re10k_packed,dl3dv_packed --num-shards 32 --shard-index 0
 """
 from __future__ import annotations
@@ -22,8 +22,8 @@ import time
 import traceback
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(ROOT / "src"))
 
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")

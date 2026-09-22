@@ -2,17 +2,17 @@
 """Public launcher for GAE codec and flow training.
 
 Examples:
-    python scripts/train.py codec --size 64 --gpus 8
-    python scripts/train.py codec --size 128 --gpus 8
-    python scripts/train.py flow --size 64 --gpus 8
-    python scripts/train.py flow --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
+    python scripts/train/train.py codec --size 64 --gpus 8
+    python scripts/train/train.py codec --size 128 --gpus 8
+    python scripts/train/train.py flow --size 64 --gpus 8
+    python scripts/train/train.py flow --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
 
 Arguments after ``--`` are forwarded to the underlying trainer.
 
 Text-to-image is not a separate task: it is co-trained *inside* the Stage 2
 flow (i2v/t2v) model. Pass ``--cotrain-t2i`` to interleave single-image
 BLIP3o / ImageNet steps into the multi-view loop (prepare the data with
-``scripts/prepare_t2i_data.py``; see docs/DATA.md). The Stage 1 codec has its
+``scripts/data/prepare_t2i_data.py``; see docs/DATA.md). The Stage 1 codec has its
 own optional ``cotrain_t2i`` block for RGB-decoder text alignment, enabled via
 the config or ``COTRAIN_T2I=1`` rather than a dedicated launcher task.
 """
@@ -24,7 +24,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def parse_args() -> tuple[argparse.Namespace, list[str]]:
@@ -59,11 +59,11 @@ def main() -> int:
 
     if args.task == "codec":
         config = ROOT / "configs" / f"gae_{args.size}.yaml"
-        trainer = ROOT / "scripts" / "train_codec.py"
+        trainer = ROOT / "scripts" / "train" / "train_codec.py"
         results = args.results_dir or f"results/gae-{args.size}-codec"
     else:
         config = ROOT / "configs" / f"flow_gae{args.size}.yaml"
-        trainer = ROOT / "scripts" / "train_flow.py"
+        trainer = ROOT / "scripts" / "train" / "train_flow.py"
         results = args.results_dir or f"results/gae-{args.size}-flow"
         if args.cotrain_t2i:
             if args.t2i_every_k < 2:

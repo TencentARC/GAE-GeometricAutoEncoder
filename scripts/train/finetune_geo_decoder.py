@@ -9,16 +9,16 @@ touched. The zero-init adapter means enabling it is an exact identity until this
 script trains it.
 
 Inputs come from the immutable geometry cache produced by
-``scripts/eval_generation.py`` run with the ``GEO_CACHE_DIR`` environment
+``scripts/eval/eval_generation.py`` run with the ``GEO_CACHE_DIR`` environment
 variable set (per-scene ``z_pred`` / ``z_regen`` / ``z_clean`` + teacher
 geometry). No flow model / no re-sampling happens here.
 
 After training, fold the trained groups back into a full codec checkpoint with
-``scripts/merge_geoft_vae_ckpt.py`` and point the flow eval at the merged ckpt.
+``scripts/train/merge_geoft_vae_ckpt.py`` and point the flow eval at the merged ckpt.
 
 Usage (single-GPU, adapter only)::
 
-    python scripts/finetune_geo_decoder.py \
+    python scripts/train/finetune_geo_decoder.py \
         --config configs/gae_128.yaml \
         --vae-ckpt ckpts/gae_128.pt \
         --cache-dir results/geo_cache \
@@ -27,7 +27,7 @@ Usage (single-GPU, adapter only)::
 
 Multi-GPU (manual grad all-reduce; adapter bypasses DDP hooks)::
 
-    torchrun --nproc_per_node=8 scripts/finetune_geo_decoder.py --config ... \
+    torchrun --nproc_per_node=8 scripts/train/finetune_geo_decoder.py --config ... \
         --vae-ckpt ... --cache-dir ... --out-dir ... --steps 2000
 """
 from __future__ import annotations
@@ -49,22 +49,22 @@ import torch.nn.functional as F
 from omegaconf import OmegaConf
 from torch.optim.lr_scheduler import LambdaLR
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-for _p in (ROOT, os.path.join(ROOT, "src"), os.path.join(ROOT, "scripts")):
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+for _p in (ROOT, os.path.join(ROOT, "src"), os.path.join(ROOT, "scripts", "eval")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
 from stage1.da3 import DA3Backbone  # noqa: E402
 from stage1.gae_codec import GAECodec  # noqa: E402
 
-from scripts.eval_generation import (  # noqa: E402
+from eval_generation import (  # noqa: E402
     _to_container_or_empty,
     _fast_load,
     _cache_da3_dir,
     _eval_cache_base,
     _inject_rgb_decoder_from_ckpt,
 )
-from scripts.eval_reconstruction import raw_no_cls_to_dpt_input  # noqa: E402
+from eval_reconstruction import raw_no_cls_to_dpt_input  # noqa: E402
 
 from utils import geo_align_loss as GAL  # noqa: E402
 

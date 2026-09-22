@@ -1,6 +1,6 @@
 """Shared training runtime helpers used by Stage 2.
 
-Public scripts (`scripts/train_flow.py`, `scripts/eval_generation.py`) import
+Public scripts (`scripts/train/train_flow.py`, `scripts/eval/eval_generation.py`) import
 from here. The historical `src/train_flow_from_cache.py` trainer is not an
 entry point for this release.
 """

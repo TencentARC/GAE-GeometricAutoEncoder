@@ -35,7 +35,7 @@ Usage::
     )
 
 The trainer flips backends with ``dataset.backend`` in YAML or the
-``--data-backend`` CLI flag (see the T2I co-train path in ``scripts/train_flow.py``).
+``--data-backend`` CLI flag (see the T2I co-train path in ``scripts/train/train_flow.py``).
 """
 from __future__ import annotations
 

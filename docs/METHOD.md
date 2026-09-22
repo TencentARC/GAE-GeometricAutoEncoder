@@ -12,10 +12,10 @@ numbers match Sections 3 and 4 of
 | (5) | Level-wise normalization and channel-wise fusion of the four DA3 levels into `X` | `src/stage1/gae_codec.py` → `GAECodec.normalize_levels` (and `denormalize_and_split` for the inverse) |
 | (6) | Encoder / decoder: `mu, log var = Enc(X)`, `F̂ = Dec(z)` | `GAECodec.encode`, `GAECodec.decode` |
 | (7) | Reparameterization `z = mu + sigma ⊙ eps` | `GAECodec.reparameterize` — sampling happens **only** during codec training; the posterior mean is used deterministically for flow training and inference |
-| (12) | `L_codec = L_feat + λ_kl L_kl + L_rgb + L_geo + L_repr` | `L_feat` and `L_kl` in `GAECodec.compute_loss`; `L_rgb` / `L_geo` / `L_repr` in `scripts/train_codec.py`, because they need image targets and the frozen teachers |
+| (12) | `L_codec = L_feat + λ_kl L_kl + L_rgb + L_geo + L_repr` | `L_feat` and `L_kl` in `GAECodec.compute_loss`; `L_rgb` / `L_geo` / `L_repr` in `scripts/train/train_codec.py`, because they need image targets and the frozen teachers |
 | (8) | `L_tok`: position-wise cosine alignment to C-RADIO through a learned projector | `src/stage1/repa_target.py` → `repa_cosine_loss`; teacher `CRadioTarget`; projector `GAECodec.repa_proj` / `repa_project` |
 | (9)–(10) | `L_struct`: match DINOv2 patch–patch similarity in the raw posterior mean | `src/stage1/repa_target.py` → `repa_similarity_loss`; teacher `DINOv2Target` |
-| (15) | Standardize the frozen posterior mean per channel before flow training | `scripts/train_codec.py` emits the stats; `gae/pipeline.py` → `GAE.standardize` / `destandardize` |
+| (15) | Standardize the frozen posterior mean per channel before flow training | `scripts/train/train_codec.py` emits the stats; `gae/pipeline.py` → `GAE.standardize` / `destandardize` |
 
 ### Two `L_struct` variants
 
@@ -57,15 +57,15 @@ installs the spatio-temporal RoPE.
 | 1, 2 | κ (covariance condition number), effective rank | `spectral_stats` |
 | 1, 2 | LNC@k | `latent_neighbor_consistency` |
 | 1, 2 | LDS / CDS / SRSS | `spatial_structure_metrics` |
-| 1, 2 | xLNC* (cross-view retrieval) | driven by `scripts/eval_generation.py` / `scripts/eval_3d_consistency.py` |
+| 1, 2 | xLNC* (cross-view retrieval) | driven by `scripts/eval/eval_generation.py` / `scripts/eval/eval_3d_consistency.py` |
 | 3, 5 | PSNR, SSIM, LPIPS | `src/metrics/image.py` |
-| 3, 5 | rFID / rFVD, FID / FVD | feature statistics over a split — `scripts/eval_reconstruction.py`, `scripts/eval_generation.py` |
-| 4, 6, 7 | VGGT ATE / RPEt / RPEr / reprojection | `scripts/eval_3d_consistency.py` |
-| 6 | MEt3R | `scripts/eval_met3r.py` |
-| 4, 7 | depth AbsRel / δ₁, Chamfer, point-map error | `scripts/eval_geometry.py` |
+| 3, 5 | rFID / rFVD, FID / FVD | feature statistics over a split — `scripts/eval/eval_reconstruction.py`, `scripts/eval/eval_generation.py` |
+| 4, 6, 7 | VGGT ATE / RPEt / RPEr / reprojection | `scripts/eval/eval_3d_consistency.py` |
+| 6 | MEt3R | `scripts/eval/eval_met3r.py` |
+| 4, 7 | depth AbsRel / δ₁, Chamfer, point-map error | `scripts/eval/eval_geometry.py` |
 
 `latent_diagnostics` in `src/metrics/latent.py` computes ρ, κ, effective rank,
-LNC@k and LDS/CDS in one call, which is what `scripts/eval_latent.py` uses.
+LNC@k and LDS/CDS in one call, which is what `scripts/eval/eval_latent.py` uses.
 
 `src/metrics/latent.py` needs a grid large enough for the spatial thresholds:
 `near_px = 24` and `far_px = 96` are in *image pixels*, so on an 18² grid at
@@ -89,8 +89,8 @@ untouched so checkpoints still load.
 | `src/stage2/models/text_encoder.py` | `text_encoder_qwen3.py` |
 | `configs/gae_64.yaml` / `gae_128.yaml` | earlier Stage-1 codec training configs (not shipped) |
 | `configs/flow_gae64.yaml` / `flow_gae128.yaml` | earlier Stage-2 flow training configs (not shipped) |
-| `scripts/train_codec.py` | `src/train_feature_vae_v2.py` |
-| `scripts/train_flow.py` | `src/train_latent_diffusion_v4_rae.py` |
+| `scripts/train/train_codec.py` | `src/train_feature_vae_v2.py` |
+| `scripts/train/train_flow.py` | `src/train_latent_diffusion_v4_rae.py` |
 
 Implementation helpers (`RGBHead`, `SelfAttentionBlock`, `PluckerFlipPE_V13`,
 `PluckerAttention`, …) keep their original names.

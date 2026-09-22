@@ -1,6 +1,6 @@
 """Evaluate GAE flow generation and reconstruction.
 
-Use ``scripts/generate.py`` for one-image + prompt generation. This lower-level
+Use ``scripts/demo/generate.py`` for one-image + prompt generation. This lower-level
 entry point supports dataset manifests, long rollouts, video metrics, direct
 geometry dumps, and PLY export. The default ``euler_v3`` sampler is the sampler
 used by the released GAE checkpoints.
@@ -11,8 +11,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path as _Path
 
-_REPO_ROOT = _Path(__file__).resolve().parent.parent
-for _p in (str(_REPO_ROOT / "src"), str(_REPO_ROOT / "scripts")):
+_REPO_ROOT = _Path(__file__).resolve().parents[2]
+for _p in (str(_REPO_ROOT / "src"), str(_REPO_ROOT / "scripts" / "eval")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
@@ -51,7 +51,7 @@ else:
     os.environ.setdefault("HUGGINGFACE_HUB_CACHE", "/tmp/xdg-cache/huggingface/hub")
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
 # Insert scripts/ before ROOT so sibling imports (eval_data, …) resolve
 # even when PYTHONPATH contains another top-level ``scripts`` package that would

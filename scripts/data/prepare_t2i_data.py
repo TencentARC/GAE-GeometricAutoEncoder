@@ -13,21 +13,21 @@ This script prepares both under ``$GAE_DATA_ROOT`` so the config paths resolve.
 Subcommands
 -----------
     # 1) BLIP3o-Pretrain tar shards from the Hugging Face Hub
-    python scripts/prepare_t2i_data.py blip3o \
+    python scripts/data/prepare_t2i_data.py blip3o \
         --output "$GAE_DATA_ROOT/BLIP3o" --splits long short journeydb
 
     # 2a) ImageNet-1k as HF Arrow (the config default; gated — `huggingface-cli login`)
-    python scripts/prepare_t2i_data.py imagenet --mode arrow \
+    python scripts/data/prepare_t2i_data.py imagenet --mode arrow \
         --output "$GAE_DATA_ROOT/imagenet-1k"
 
     # 2b) ImageNet-1k packed into BLIP3o-style tar shards from a local train dir
     #     (<source>/<wnid>/*.JPEG); captions are the class names.
-    python scripts/prepare_t2i_data.py imagenet --mode wds \
+    python scripts/data/prepare_t2i_data.py imagenet --mode wds \
         --source /datasets/imagenet/train \
         --output "$GAE_DATA_ROOT/Blip3o_style/ImageNet-1K-T2I"
 
     # 3) Verify a config's cotrain_t2i paths resolve to real data
-    python scripts/prepare_t2i_data.py verify --config configs/gae_64.yaml
+    python scripts/data/prepare_t2i_data.py verify --config configs/gae_64.yaml
 """
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ import sys
 import tarfile
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parent.parent
+_ROOT = Path(__file__).resolve().parents[2]
 for _p in (_ROOT, _ROOT / "src"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))

@@ -22,7 +22,7 @@ Scenes lacking colmap/, depth/ or rgb/ are skipped.
 Usage (8-shard parallel)::
 
     for i in $(seq 0 7); do
-      python scripts/preprocess_scannetpp.py \
+      python scripts/data/preprocess_scannetpp.py \
         --source /datasets/scannetpp \
         --output "$GAE_DATA_ROOT/scannetpp_preprocessed" \
         --num-frames 256 --resolution 504 --depth-resolution 192 \

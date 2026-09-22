@@ -42,7 +42,8 @@ compresses frozen geometry-foundation features into a compact per-view latent
 whose generated states decode jointly into **RGB and geometry**.
 
 This is the public code release for the paper. Use `gae/` for inference,
-`scripts/` for training and the paper tables, and `configs/` for the recipes.
+`scripts/demo/` / `scripts/train/` / `scripts/eval/` / `scripts/data/` for the
+CLIs, and `configs/` for the recipes.
 Internal research filenames are documented in [`docs/CODEBASE.md`](docs/CODEBASE.md)
 and [`docs/METHOD.md`](docs/METHOD.md); you do not need them to run GAE.
 
@@ -122,24 +123,24 @@ validated Euler + CFG sampler in both cases. This is the fastest way to see GAE
 work; the training and evaluation workflows follow in the next section.
 
 Weights live at [`TencentARC/GAE-D64-1B`](https://huggingface.co/TencentARC/GAE-D64-1B).
-`bash scripts/run_demo.sh` creates `.venv` if needed, installs the package,
+`bash scripts/demo/run_demo.sh` creates `.venv` if needed, installs the package,
 downloads those weights when `ckpts/` is empty, then runs the bundled examples
 (`examples/scenes/` plus `examples/t2i_prompts.txt`):
 
 ```bash
-bash scripts/run_demo.sh
-bash scripts/run_demo.sh --smoke          # 17 views, 25 steps
-bash scripts/run_demo.sh --task i2v
+bash scripts/demo/run_demo.sh
+bash scripts/demo/run_demo.sh --smoke          # 17 views, 25 steps
+bash scripts/demo/run_demo.sh --task i2v
 ```
 
 Results go to `results/demo/i2v/<scene>/` and `results/demo/t2i/`.
-`bash scripts/run_demo.sh --help` lists flags. Extra arguments after `--` are
-forwarded to `scripts/generate.py`.
+`bash scripts/demo/run_demo.sh --help` lists flags. Extra arguments after `--` are
+forwarded to `scripts/demo/generate.py`.
 
 ### 🎬 Video + point cloud from one image and prompt
 
 ```bash
-python scripts/generate.py \
+python scripts/demo/generate.py \
   --image examples/scenes/forest_lake_trail.jpg \
   --prompt-file examples/scenes/forest_lake_trail.txt \
   --hf-repo TencentARC/GAE-D64-1B \
@@ -154,7 +155,7 @@ For dataset-scale generation metrics (FVD / FID / 3D-consistency / MEt3R) see
 ### 🖼️ Image from a prompt (single frame)
 
 ```bash
-python scripts/generate_t2i.py \
+python scripts/demo/generate_t2i.py \
   --hf-repo TencentARC/GAE-D64-1B \
   --prompts-file examples/t2i_prompts.txt \
   --output results/t2i
@@ -202,18 +203,18 @@ are the underlying commands, useful when you need to customize a run.
 # --- one-click training ---------------------------------------------------
 # Stage 1 codec, Stage 2 flow, or both. The flow stage auto-builds the
 # latent statistics (Eq. 15) from a codec checkpoint if they are missing.
-scripts/run_train.sh --stage codec --size 64  --gpus 8
-scripts/run_train.sh --stage flow  --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
-scripts/run_train.sh --stage both  --size 64  --codec-ckpt ckpts/gae_64.pt
+scripts/train/run_train.sh --stage codec --size 64  --gpus 8
+scripts/train/run_train.sh --stage flow  --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
+scripts/train/run_train.sh --stage both  --size 64  --codec-ckpt ckpts/gae_64.pt
 
 # --- one-click evaluation -------------------------------------------------
 # Default tasks (recon,latent,gen) need only the shipped GAE ckpts + data.
-scripts/run_eval.sh --size 64
-scripts/run_eval.sh --size 128 --tasks recon,latent --dataset dl3dv_packed
+scripts/eval/run_eval.sh --size 64
+scripts/eval/run_eval.sh --size 128 --tasks recon,latent --dataset dl3dv_packed
 # 3D-consistency / MEt3R / geometry additionally need external recon models,
 # supplied through env vars:
 VGGT_CKPT=ckpts/vggt.pt PI3_CKPT=ckpts/pi3.pt \
-  scripts/run_eval.sh --size 64 --tasks gen,consistency,met3r,geometry
+  scripts/eval/run_eval.sh --size 64 --tasks gen,consistency,met3r,geometry
 ```
 
 Run them from the repository root with `GAE_DATA_ROOT` set (see **Prepare
@@ -226,40 +227,40 @@ entry points documented below. A per-script command reference lives in
 
 ```bash
 # Raw RE10K: <source>/{train,test}/<shard>/<scene>/{*.png,transforms.json}
-python scripts/prepare_data.py re10k \
+python scripts/data/prepare_data.py re10k \
   --source /datasets/RealEstate10K --output "$GAE_DATA_ROOT/re10k_packed" \
   --split train --workers 8
 
 # Raw DL3DV: <source>/<split>/<scene>/[nerfstudio/]/{images_4,transforms.json}
-python scripts/prepare_data.py dl3dv \
+python scripts/data/prepare_data.py dl3dv \
   --source /datasets/DL3DV-10K --output "$GAE_DATA_ROOT/dl3dv_packed" \
   --workers 8
 
 
 # ScanNet++ (own loader + depth sidecar) and MVS-Synth (VideoMetaScene schema)
-python scripts/preprocess_scannetpp.py \
+python scripts/data/preprocess_scannetpp.py \
   --source /datasets/scannetpp --output "$GAE_DATA_ROOT/scannetpp_preprocessed" \
   --num-shards 8 --shard-index 0
-python scripts/preprocess_mvssynth.py \
+python scripts/data/preprocess_mvssynth.py \
   --source /datasets/MVS-Synth/GTAV_540 --output "$GAE_DATA_ROOT/mvssynth_packed"
 
 # Required before Flow/DiT training
-python scripts/export_da3_metric_poses.py \
+python scripts/data/export_da3_metric_poses.py \
   --dataset re10k_packed --root "$GAE_DATA_ROOT/re10k_packed" \
   --device cuda:0 --skip-existing
 ```
 
 Both produce `<scene>/{video.mp4,meta.json,caption.txt}`. For the optional
 text-to-image co-training data (BLIP3o + ImageNet-1k) use
-`scripts/prepare_t2i_data.py`. See [`docs/DATA.md`](docs/DATA.md).
+`scripts/data/prepare_t2i_data.py`. See [`docs/DATA.md`](docs/DATA.md).
 
 ### Train the GAE-64 / GAE-128 codec or the flow model
 
 ```bash
-python scripts/train.py codec --size 64  --gpus 8
-python scripts/train.py codec --size 128 --gpus 8
-python scripts/train.py flow --size 64 --gpus 8
-python scripts/train.py flow --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
+python scripts/train/train.py codec --size 64  --gpus 8
+python scripts/train/train.py codec --size 128 --gpus 8
+python scripts/train/train.py flow --size 64 --gpus 8
+python scripts/train/train.py flow --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
 ```
 
 The underlying entry points remain `train_codec.py` and `train_flow.py`; pass
@@ -271,10 +272,10 @@ codec keeps an optional `cotrain_t2i` block of its own (`COTRAIN_T2I=1`) for
 RGB-decoder text alignment.
 
 Flow training reads `ckpts/latent_stats_gae_64.pt` (Eq. 15). Download it with
-`scripts/download_checkpoints.py --subset codec`, or compute it for a custom
+`scripts/demo/download_checkpoints.py --subset codec`, or compute it for a custom
 codec — see **Latent statistics for a custom codec** below.
 
-On network filesystems, run `python scripts/build_dataset_index.py --config
+On network filesystems, run `python scripts/data/build_dataset_index.py --config
 configs/gae_64.yaml` once beforehand to pre-build the loader index caches so rank0
 does not block `torchrun` on a cold scan (idempotent, safe to re-run).
 
@@ -282,16 +283,16 @@ does not block `torchrun` on a cold scan (idempotent, safe to re-run).
 
 ```bash
 # RGB, feature, depth and camera/geometry reconstruction
-python scripts/eval_reconstruction.py \
+python scripts/eval/eval_reconstruction.py \
   --config configs/gae_64.yaml --vae-ckpt ckpts/gae_64.pt \
   --dataset re10k_packed --data-root "$GAE_DATA_ROOT/re10k_packed/test"
 
 # Encode posterior means, then measure rho/kappa/rank/LNC/LDS/CDS
-python scripts/encode_latents.py \
+python scripts/eval/encode_latents.py \
   --input "$GAE_DATA_ROOT/re10k_packed/test" \
   --config configs/gae_64.yaml --codec-ckpt ckpts/gae_64.pt \
   --output results/re10k_gae64_latents.pt
-python scripts/eval_latent.py \
+python scripts/eval/eval_latent.py \
   --latents gae64=results/re10k_gae64_latents.pt \
   --json results/re10k_gae64_latent_metrics.json
 ```
@@ -306,7 +307,7 @@ generation quality and 3D consistency see **Evaluate generation quality** below.
 ```bash
 # 1) Camera-conditioned generation -> Table 5 (FVD / FID / LPIPS / PSNR / SSIM);
 #    also dumps point clouds + geometry for the 3D metrics below.
-python scripts/eval_generation.py \
+python scripts/eval/eval_generation.py \
   --config configs/flow_gae64.yaml \
   --dit-ckpt ckpts/flow_gae64.pt --vae-ckpt ckpts/gae_64.pt \
   --dataset re10k_packed --data-root "$GAE_DATA_ROOT/re10k_packed" \
@@ -315,16 +316,16 @@ python scripts/eval_generation.py \
   --output-dir results/gen_gae64 --save-pointcloud --dump-geometry
 
 # 2) Generated-view 3D consistency + MEt3R -> Table 6 (needs external recon models)
-python scripts/eval_3d_consistency.py \
+python scripts/eval/eval_3d_consistency.py \
   --pred-dir results/gen_gae64 \
   --dataset re10k_packed --data-root "$GAE_DATA_ROOT/re10k_packed" \
   --vggt-ckpt ckpts/vggt.pt --da3-ckpt ckpts/da3_giant.pt \
   --output-name results/gen_gae64/consistency.json
-python scripts/eval_met3r.py --pred-dir results/gen_gae64 \
+python scripts/eval/eval_met3r.py --pred-dir results/gen_gae64 \
   --output results/gen_gae64/met3r.json
 
 # 3) Geometry decoded from sampled latents -> Table 7 (needs Pi3)
-python scripts/eval_geometry.py \
+python scripts/eval/eval_geometry.py \
   --geom-dir results/gen_gae64 --pi3-ckpt ckpts/pi3.pt \
   --output-name results/gen_gae64/geometry.json
 ```
@@ -336,12 +337,12 @@ shipped here). The default `--num-scenes 4 --num-views 8` is a smoke setting; th
 paper protocol is 64 scenes × 9 views, 1 reference, 50 steps, CFG 2. Because the
 released flow weights are a stronger continued-training model these will not
 reproduce the paper numbers exactly — see [Results](#-results). One-click
-equivalent: `scripts/run_eval.sh --size 64 --tasks gen,consistency,met3r,geometry`.
+equivalent: `scripts/eval/run_eval.sh --size 64 --tasks gen,consistency,met3r,geometry`.
 
 ### (Advanced) Latent statistics for a custom codec
 
 ```bash
-python scripts/compute_latent_stats.py \
+python scripts/train/compute_latent_stats.py \
   --config configs/gae_64.yaml --codec-ckpt ckpts/gae_64.pt \
   --num-batches 500 --output ckpts/latent_stats_gae_64.pt
 ```
@@ -356,14 +357,14 @@ zero-init `geo_adapter`), then folds the result into a full codec checkpoint:
 
 ```bash
 # dump the per-scene geometry cache during flow eval
-GEO_CACHE_DIR=results/geo_cache python scripts/eval_generation.py \
+GEO_CACHE_DIR=results/geo_cache python scripts/eval/eval_generation.py \
   --config configs/flow_gae64.yaml --dit-ckpt ckpts/flow_gae64.pt --vae-ckpt ckpts/gae_64.pt
 
-python scripts/finetune_geo_decoder.py \
+python scripts/train/finetune_geo_decoder.py \
   --config configs/gae_128.yaml --vae-ckpt ckpts/gae_128.pt \
   --cache-dir results/geo_cache --out-dir results/geoft/run0 --steps 2000
 
-python scripts/merge_geoft_vae_ckpt.py \
+python scripts/train/merge_geoft_vae_ckpt.py \
   --geoft results/geoft/run0/geoft_002000.pt --base-vae ckpts/gae_128.pt \
   --base-gld-config configs/gae_128.yaml \
   --out-ckpt ckpts/gae_128_geoft.pt --out-gld-config configs/gae_128_geoft.yaml
@@ -376,21 +377,21 @@ python scripts/merge_geoft_vae_ckpt.py \
 Refer to the paper for the reported numbers in each table; they were not
 re-measured in this repository. [`docs/METHOD.md`](docs/METHOD.md) maps every
 equation in the paper to the code that implements it, and every table has a
-matching `scripts/eval_*.py` (see the eval steps above).
+matching `scripts/eval/eval_*.py` (see the eval steps above).
 
 **Checkpoint provenance — read before comparing to the paper.** The paper's
 *generation* tables (5, 6, 7) were produced by the specific research flow model
 used at submission time. The **released** `flow_gae{64,128}.pt` are a *stronger
 continued-training* model — larger resolution, more frames, and more training
-data. Consequently `scripts/eval_generation.py`, `eval_3d_consistency.py`,
+data. Consequently `scripts/eval/eval_generation.py`, `eval_3d_consistency.py`,
 `eval_met3r.py`, and `eval_geometry.py` will **not** reproduce the exact
 paper numbers on these weights; they are expected to match or exceed them.
 Reproducing Tables 5–7 verbatim requires the original research checkpoint,
 which is not part of this release.
 
-The *latent-diagnostic* (Tables 1, 2 — `scripts/eval_latent.py`) and
-*reconstruction* (Tables 3, 4 — `scripts/eval_reconstruction.py`,
-`scripts/eval_geometry.py`) metrics depend only on the codec
+The *latent-diagnostic* (Tables 1, 2 — `scripts/eval/eval_latent.py`) and
+*reconstruction* (Tables 3, 4 — `scripts/eval/eval_reconstruction.py`,
+`scripts/eval/eval_geometry.py`) metrics depend only on the codec
 (`gae_{64,128}.pt`), not the flow model, so they are unaffected by the flow
 continued-training and track the paper's codec results directly.
 
@@ -402,7 +403,10 @@ continued-training and track the paper's codec results directly.
 gae/                      public API (GAE, load_codec, load_flow)
 assets/                   teaser figure
 configs/                  gae_{64,128}.yaml, flow_gae{64,128}.yaml
-scripts/                  train_codec, train_flow, eval_*, smoke_test
+scripts/demo/             run_demo.sh, generate.py, generate_t2i.py
+scripts/train/            train_codec, train_flow, run_train.sh
+scripts/eval/             eval_*, smoke_test, run_eval.sh
+scripts/data/             packing, preprocessing, DA3 poses
 src/stage1/               GAECodec + frozen DA3
 src/stage2/models/dit*.py GAEFlow / GAEFlowTemporal
 src/utils/train_runtime.py  DDP / ckpt / latent-stats helpers

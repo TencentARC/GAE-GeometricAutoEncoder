@@ -2,20 +2,20 @@
 """Pure text-to-image generation with a GAE flow model.
 
 This drives the *same* validated Euler + CFG sampler as the video/i2v path
-(``scripts/eval_generation.sample_v4_euler``) with ``V=1``, ``cond_num=0`` and
+(``scripts/eval/eval_generation.sample_v4_euler``) with ``V=1``, ``cond_num=0`` and
 no camera rays, so a single frame is generated from text alone. The generated
 latent is decoded to RGB through the codec's RGB head — the same head trained by
 the ``cotrain_t2i`` branch of Stage 1 (see ``configs/gae_64.yaml``).
 
 Example
 -------
-    python scripts/generate_t2i.py \
+    python scripts/demo/generate_t2i.py \
         --hf-repo TencentARC/GAE-D64-1B \
         --prompts-file examples/t2i_prompts.txt \
         --output results/t2i
 
     # multiple prompts (';;'-separated) or from a file, N images each:
-    python scripts/generate_t2i.py --hf-repo TencentARC/GAE-D64-1B \
+    python scripts/demo/generate_t2i.py --hf-repo TencentARC/GAE-D64-1B \
         --prompts "a snowy cabin at dusk;;a bowl of ramen" --num-images 2 \
         --output results/t2i
 
@@ -25,7 +25,7 @@ Notes
   ``cotrain_t2i`` does). The RGB head is auto-detected from the checkpoint keys.
 * Depth and a DPT point cloud are written next to each PNG by default
   (``--no-pointcloud`` to skip). Camera-controlled video still uses
-  ``scripts/generate.py``.
+  ``scripts/demo/generate.py``.
 """
 from __future__ import annotations
 
@@ -36,8 +36,8 @@ import os
 import sys
 from pathlib import Path
 
-_ROOT = Path(__file__).resolve().parent.parent
-for _p in (_ROOT, _ROOT / "src", _ROOT / "scripts"):
+_ROOT = Path(__file__).resolve().parents[2]
+for _p in (_ROOT, _ROOT / "src", _ROOT / "scripts" / "eval"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 

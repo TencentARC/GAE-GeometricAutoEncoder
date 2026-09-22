@@ -1,7 +1,7 @@
 """
 ScanNet++ RGB multi-view dataset (preprocessed mp4 + meta.json).
 
-Reads from the output of ``scripts/preprocess_scannetpp.py``:
+Reads from the output of ``scripts/data/preprocess_scannetpp.py``:
 
     ROOT/
         <scene_id>/
@@ -17,7 +17,7 @@ Each ``__getitem__`` returns ``num_views`` view dicts in the same format as
 The video is read on the fly with ``cv2.VideoCapture`` and seeked by frame
 index; the per-scene camera arrays are LRU-cached.
 
-Used by the codec fine-tune pipeline (``scripts/train_codec.py``), which
+Used by the codec fine-tune pipeline (``scripts/train/train_codec.py``), which
 encodes RGB through DA3 → VAE and reconstructs DA3 features. This class does
 NOT load precomputed latents — for that, see ``ScanNetppLatent_Multi``.
 """
@@ -53,7 +53,7 @@ class ScanNetppRGB_Multi(BaseMultiViewDataset):
     """ScanNet++ multi-view RGB dataset backed by preprocessed mp4 files.
 
     Args:
-        ROOT:          Output dir of ``scripts/preprocess_scannetpp.py``.
+        ROOT:          Output dir of ``scripts/data/preprocess_scannetpp.py``.
         split:         Optional ``"train"`` / ``"val"`` partition by scene hash.
         val_frac:      Fraction of scenes held out for val (default 0.02).
         min_interval:  Min frame stride between sampled views (default 1).

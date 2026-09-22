@@ -1,6 +1,6 @@
 """Canonical ImageNet-1k class names (index 0..999).
 
-Used by src/data/imagenet_arrow.py and scripts/prepare_t2i_data.py to build
+Used by src/data/imagenet_arrow.py and scripts/data/prepare_t2i_data.py to build
 text captions for ImageNet co-training samples. Order matches the standard
 ILSVRC-2012 class index (same as torchvision ResNet weights `categories`).
 """

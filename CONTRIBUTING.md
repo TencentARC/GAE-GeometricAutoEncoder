@@ -18,7 +18,7 @@ so you no longer need to set `PYTHONPATH` by hand.
 ## Layout
 
 - `gae/` — small public API. Prefer adding user-facing entry points here.
-- `scripts/` — CLIs for data prep, training, evaluation, and generation.
+- `scripts/{demo,train,eval,data}/` — CLIs for generation, training, evaluation, and data prep.
 - `src/` — research modules. See [`docs/CODEBASE.md`](docs/CODEBASE.md) for which
   files are load-bearing versus kept only for checkpoint compatibility.
 - `configs/` — the released recipes. Keep config *keys* stable so published
@@ -28,8 +28,8 @@ so you no longer need to set `PYTHONPATH` by hand.
 
 ```bash
 ruff check .
-python scripts/validate_configs.py
-python scripts/smoke_test.py
+python scripts/eval/validate_configs.py
+python scripts/eval/smoke_test.py
 pytest -q tests/test_configs.py tests/test_imports.py tests/test_prepare_data.py
 ```
 

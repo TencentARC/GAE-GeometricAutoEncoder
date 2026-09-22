@@ -25,8 +25,10 @@ import torch.nn as nn
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _SRC = str(_REPO_ROOT / "src")
-if _SRC not in sys.path:
-    sys.path.insert(0, _SRC)
+_EVAL = str(_REPO_ROOT / "scripts" / "eval")
+for _p in (_SRC, _EVAL):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from omegaconf import OmegaConf  # noqa: E402
 
@@ -282,7 +284,7 @@ class GAE(nn.Module):
         """Read the transport / time-shift settings the Euler sampler needs.
 
         The logit-normal sampling schedule is warped by ``time_dist_shift``
-        (paper Eq. 11). Resolution order mirrors ``scripts/train_flow.py`` so
+        (paper Eq. 11). Resolution order mirrors ``scripts/train/train_flow.py`` so
         training and inference agree: an explicit ``misc.time_dist_shift`` wins;
         otherwise it is derived from ``misc.time_dist_shift_dim`` (the flattened
         per-sample latent size) with ``misc.time_dist_shift_base``. The codec
@@ -407,9 +409,9 @@ class GAE(nn.Module):
     ) -> torch.Tensor:
         """Sample ``total_views`` latents from ``cond_num`` clean references.
 
-        This runs the same Euler + CFG sampler as ``scripts/eval_generation.py``.
+        This runs the same Euler + CFG sampler as ``scripts/eval/eval_generation.py``.
         For the full single-image + prompt + camera demo (image loading, pose
-        synthesis, RGB/point-cloud export) use ``scripts/generate.py``; this
+        synthesis, RGB/point-cloud export) use ``scripts/demo/generate.py``; this
         method is the tensor-level entry point.
 
         Args:
@@ -419,7 +421,7 @@ class GAE(nn.Module):
             total_views: Number of views to produce (``>= cond_num``).
             cond_num: Number of leading views treated as clean evidence.
             plucker_6d: Per-token metric ray maps ``[1, V*h*w, 6]`` (Eq. 13),
-                e.g. from ``scripts/eval_generation.build_plucker_from_cameras``.
+                e.g. from ``scripts/eval/eval_generation.build_plucker_from_cameras``.
             ref_global: Text cross-attention context ``[1, T, D]``.
             cfg_uncond_ref_global: Unconditional text context for CFG (encode the
                 empty string with the same encoder). Required when ``cfg_scale>1``.

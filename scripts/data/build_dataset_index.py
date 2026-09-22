@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 """Pre-build VideoMetaScene / ScanNetppRGB index pickles (local + shared cache).
 
-Run once before codec training (``scripts/train.py codec``) so rank0 does
+Run once before codec training (``scripts/train/train.py codec``) so rank0 does
 not block torchrun for hours on a cold FUSE scan. Safe to re-run (idempotent).
 
 Usage::
 
     VMS_INDEX_WORKERS=32 OSP_INDEX_WORKERS=64 \\
-    PYTHONPATH=src python scripts/build_dataset_index.py \\
+    PYTHONPATH=src python scripts/data/build_dataset_index.py \\
         --config configs/gae_128.yaml
 
 Speed: VMS reads only meta.json headers (skips ``frames``); OSP uses parallel
@@ -21,7 +21,7 @@ import os
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 from omegaconf import OmegaConf

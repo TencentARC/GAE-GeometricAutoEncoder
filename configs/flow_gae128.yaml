@@ -59,7 +59,7 @@ stage_1:
 # Frozen GAE-128 codec and its per-channel latent statistics.
 vae_checkpoint: "ckpts/gae_128.pt"
 gld_config: "configs/gae_128.yaml"
-latent_stats: "ckpts/latent_stats_gae_128.pt"   # from scripts/download_checkpoints.py or scripts/compute_latent_stats.py
+latent_stats: "ckpts/latent_stats_gae_128.pt"   # from scripts/demo/download_checkpoints.py or scripts/train/compute_latent_stats.py
 
 codec:                                    # must match the frozen codec (Stage 1)
   latent_dim: 128

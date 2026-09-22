@@ -9,9 +9,11 @@ entry points can load the paper checkpoints.
 | Path | Role |
 |---|---|
 | `gae/` | Installable facade: `GAE.from_configs`, `load_codec`, `load_flow` |
-| `scripts/train_codec.py` | Stage 1 |
-| `scripts/train_flow.py` | Stage 2 |
-| `scripts/eval_*.py` | Paper tables 1–7 |
+| `scripts/demo/` | I2V / T2I generation and `run_demo.sh` |
+| `scripts/train/train_codec.py` | Stage 1 |
+| `scripts/train/train_flow.py` | Stage 2 |
+| `scripts/eval/eval_*.py` | Paper tables 1–7 |
+| `scripts/data/` | Packed-dataset builders and DA3 pose export |
 | `configs/gae_{64,128}.yaml` | Codec |
 | `configs/flow_gae{64,128}.yaml` | Flow |
 | `src/stage1/gae_codec.py` | `GAECodec` |

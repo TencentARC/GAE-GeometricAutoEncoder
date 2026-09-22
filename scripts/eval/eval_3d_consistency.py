@@ -14,7 +14,7 @@ Follows the protocol of Geometric Latent Diffusion (GLD) paper, Sec. 5.1.4:
 
 This script is a *backend-agnostic* evaluator: it reads the **already
 generated** novel views produced by the diffusion eval script
-(`scripts/eval_generation.py`) and computes only the 3D-consistency metrics. The
+(`scripts/eval/eval_generation.py`) and computes only the 3D-consistency metrics. The
 generation step is *not* repeated, so a single VGGT pass is amortized over
 all baselines.
 
@@ -42,19 +42,19 @@ Usage
     cd /path/to/GLD
 
     # Evaluate generated novel views
-    PYTHONPATH=src uv run python scripts/eval_3d_consistency.py \\
+    PYTHONPATH=src uv run python scripts/eval/eval_3d_consistency.py \\
         --pred-dir results/eval_generation \\
         --scene-manifest configs/eval/re10k_v3_16scenes_seed42.json \\
         --num-views 9 --cond-num 1
 
     # Evaluate another run
-    PYTHONPATH=src uv run python scripts/eval_3d_consistency.py --pred-dir results/eval_generation --scene-manifest configs/eval/re10k_v3_16scenes_seed42.json --num-views 9 --cond-num 1
+    PYTHONPATH=src uv run python scripts/eval/eval_3d_consistency.py --pred-dir results/eval_generation --scene-manifest configs/eval/re10k_v3_16scenes_seed42.json --num-views 9 --cond-num 1
 
     # Evaluate a baseline run
-    PYTHONPATH=src uv run python scripts/eval_3d_consistency.py --pred-dir results/eval_generation --scene-manifest configs/eval/re10k_v3_16scenes_seed42.json --num-views 9 --cond-num 1
+    PYTHONPATH=src uv run python scripts/eval/eval_3d_consistency.py --pred-dir results/eval_generation --scene-manifest configs/eval/re10k_v3_16scenes_seed42.json --num-views 9 --cond-num 1
 
     # Sanity check: evaluate the GT mp4s themselves (should give near-zero errors)
-    PYTHONPATH=src uv run python scripts/eval_3d_consistency.py \\
+    PYTHONPATH=src uv run python scripts/eval/eval_3d_consistency.py \\
         --pred-dir results/eval_generation --pred-source gt \\
         --scene-manifest configs/eval/re10k_v3_16scenes_seed42.json \\
         --num-views 9
@@ -89,8 +89,9 @@ if os.path.isdir("/local-ssd"):
 else:
     os.environ.setdefault("TORCH_HOME", "/tmp/torch_home")
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC_ROOT = os.path.join(ROOT, "src")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, SRC_ROOT)
 
@@ -119,7 +120,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from scripts.eval_data import (
+from eval_data import (
     DATASET_ROOTS,
     collect_scenes,
     collect_scenes_re10k,

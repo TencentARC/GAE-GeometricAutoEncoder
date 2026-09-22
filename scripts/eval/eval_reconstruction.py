@@ -6,27 +6,27 @@ decoder is needed.  Depth evaluation still uses the DPT decoder.
 
 Usage:
     # RE10K (default)
-    PYTHONPATH=src python scripts/eval_reconstruction.py \
+    PYTHONPATH=src python scripts/eval/eval_reconstruction.py \
         --vae-ckpt ckpts/gae_128.pt \
         --dataset re10k --num-scenes 10 --num-views 1
 
     # DL3DV
-    PYTHONPATH=src python scripts/eval_reconstruction.py \
+    PYTHONPATH=src python scripts/eval/eval_reconstruction.py \
         --vae-ckpt ckpts/gae_64.pt \
         --dataset dl3dv --num-scenes 10 --num-views 4
 
     # MVS-Synth
-    PYTHONPATH=src python scripts/eval_reconstruction.py \
+    PYTHONPATH=src python scripts/eval/eval_reconstruction.py \
         --vae-ckpt ckpts/gae_64.pt \
         --dataset mvssynth --num-scenes 10 --num-views 4
 
     # Sintel (dynamic scenes — 50-frame mp4 clips with GT depth/pose)
-    PYTHONPATH=src python scripts/eval_reconstruction.py \
+    PYTHONPATH=src python scripts/eval/eval_reconstruction.py \
         --vae-ckpt ckpts/gae_64.pt \
         --dataset sintel --num-scenes 10 --num-views 4
 
     # All datasets at once (now includes sintel)
-    PYTHONPATH=src python scripts/eval_reconstruction.py \
+    PYTHONPATH=src python scripts/eval/eval_reconstruction.py \
         --vae-ckpt ckpts/gae_64.pt \
         --dataset all --num-scenes 8 --num-views 4 --fast
 """
@@ -38,7 +38,7 @@ import sys
 import random
 
 os.environ.setdefault("TMPDIR", "/tmp")
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
 import torch

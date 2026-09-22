@@ -1,4 +1,4 @@
-# Text-to-image demo prompts for scripts/generate_t2i.py (one per line; '#' = comment).
+# Text-to-image demo prompts for scripts/demo/generate_t2i.py (one per line; '#' = comment).
 An antique French gilt-and-silver heart-shaped reliquary with ornate floral engraving, displayed on a wooden table under warm studio lighting.
 A charming anthropomorphic white-and-tan hamster wearing polished medieval plate armor, standing among vivid pink flowers.
 A detailed humanoid robot with reflective black-and-silver armor and glowing green eyes, standing in a misty forest at sunset.

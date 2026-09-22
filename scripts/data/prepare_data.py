@@ -8,11 +8,11 @@ Each output scene contains:
     caption.txt  (when a caption is available)
 
 Examples:
-    python scripts/prepare_data.py re10k \
+    python scripts/data/prepare_data.py re10k \
         --source /datasets/RealEstate10K --output /data/gae/re10k_packed \
         --split train --workers 8
 
-    python scripts/prepare_data.py dl3dv \
+    python scripts/data/prepare_data.py dl3dv \
         --source /datasets/DL3DV-10K --output /data/gae/dl3dv_packed \
         --workers 8
 """
