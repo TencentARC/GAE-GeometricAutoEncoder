@@ -88,6 +88,8 @@ def parse_args() -> tuple[argparse.Namespace, list[str]]:
     flow.add_argument("--size", type=int, choices=(64, 128), required=True,
                       help="latent dim: 64 -> flow_gae64.yaml, 128 -> flow_gae128.yaml")
     _add_distributed_args(flow)
+    flow.add_argument("--vae-ckpt", default=None,
+                      help="Override the Flow config codec checkpoint.")
     flow.add_argument("--results-dir")
     flow.add_argument("--cotrain-t2i", action="store_true",
                       help="Interleave single-image T2I steps into the i2v loop.")
@@ -134,6 +136,9 @@ def main() -> int:
         "--results-dir", results,
         *extra,
     ]
+    if args.task == "flow" and args.vae_ckpt:
+        command.extend(["--vae-ckpt", args.vae_ckpt])
+
     print("[train]", " ".join(command), flush=True)
     return subprocess.call(command, cwd=ROOT, env=env)
 

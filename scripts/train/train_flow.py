@@ -123,6 +123,8 @@ def parse_args():
         "--results-dir", type=str,
         default="results/gae-flow",
     )
+    p.add_argument("--vae-ckpt", type=str, default=None,
+                   help="Override config vae_checkpoint with a trained codec checkpoint.")
     p.add_argument("--precision", choices=["fp32", "bf16"], default="bf16")
     p.add_argument("--ckpt", type=str, default=None,
                    help="Resume checkpoint (model + optimizer + scheduler + step).")
@@ -402,6 +404,8 @@ def main():
     rank, world_size, device = _setup_distributed_with_timeout(watchdog_minutes=15)
 
     cfg = OmegaConf.load(args.config)
+    if args.vae_ckpt:
+        cfg.vae_checkpoint = args.vae_ckpt
     # 启动期覆盖 view_choices（顶层键，被各 dataset 的 ${view_choices} 插值引用）。
     # dataset 在下方 build loader 时才解析 train_dataset 字符串，故此处赋值可传播；
     # 所有 dataset 共用同一顶层键，CatDataset 的一致性断言也不受影响。

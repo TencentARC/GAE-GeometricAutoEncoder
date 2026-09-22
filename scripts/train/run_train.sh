@@ -107,12 +107,12 @@ train_codec() {
 }
 
 ensure_latent_stats() {
+  [[ -n "$CODEC_CKPT" ]] || CODEC_CKPT="$DEFAULT_CODEC_CKPT"
   if [[ "$FORCE_STATS" != "1" && -f "$STATS_PT" ]]; then
     echo "[run_train] latent stats present: $STATS_PT"
     return
   fi
   echo "[run_train] latent stats missing: $STATS_PT"
-  [[ -n "$CODEC_CKPT" ]] || CODEC_CKPT="$DEFAULT_CODEC_CKPT"
   [[ -f "$CODEC_CKPT" ]] || die "cannot build latent stats: codec ckpt not found at '$CODEC_CKPT' (pass --codec-ckpt, or fetch stats with scripts/demo/download_checkpoints.py)"
   echo "[run_train] computing latent stats from $CODEC_CKPT ..."
   mkdir -p "$(dirname "$STATS_PT")"
@@ -124,7 +124,7 @@ ensure_latent_stats() {
 train_flow() {
   echo "[run_train] === Stage 2 flow (d${SIZE}) ==="
   ensure_latent_stats
-  local args=(flow --size "$SIZE" --gpus "$GPUS" --nnodes "$NNODES" --node-rank "$NODE_RANK" --master-addr "$MASTER_ADDR" --master-port "$MASTER_PORT")
+  local args=(flow --size "$SIZE" --gpus "$GPUS" --nnodes "$NNODES" --node-rank "$NODE_RANK" --master-addr "$MASTER_ADDR" --master-port "$MASTER_PORT" --vae-ckpt "$CODEC_CKPT")
   [[ "$COTRAIN_T2I" == "1" ]] && args+=(--cotrain-t2i)
   run python scripts/train/train.py "${args[@]}" "${EXTRA[@]}"
 }

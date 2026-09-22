@@ -109,9 +109,20 @@ See [`docs/DATA.md`](../docs/DATA.md) for the ImageNet WebDataset packing altern
 ## Training
 
 ```bash
+# GAE-64: codec -> latent statistics -> Flow/DiT
 python scripts/train/train.py codec --size 64 --gpus 8
+CODEC_CKPT_64=path/to/trained_gae_64_checkpoint.pt
+python scripts/train/compute_latent_stats.py --config configs/gae_64.yaml \
+  --codec-ckpt "$CODEC_CKPT_64" \
+  --num-batches 500 --output ckpts/latent_stats_gae_64.pt
+python scripts/train/train.py flow --size 64 --gpus 8 --vae-ckpt "$CODEC_CKPT_64"
+
+# GAE-128: codec -> latent statistics -> Flow/DiT
 python scripts/train/train.py codec --size 128 --gpus 8
-python scripts/train/train.py flow --size 64 --gpus 8
+CODEC_CKPT_128=path/to/trained_gae_128_checkpoint.pt
+python scripts/train/compute_latent_stats.py --config configs/gae_128.yaml \
+  --codec-ckpt "$CODEC_CKPT_128" \
+  --num-batches 500 --output ckpts/latent_stats_gae_128.pt
 python scripts/train/train.py flow --size 128 --gpus 8 --cotrain-t2i   # i2v + T2I
 ```
 
@@ -133,19 +144,6 @@ single-image T2I steps into the multi-view loop (tune with `--t2i-every-k`). The
 codec has its own optional `cotrain_t2i` block (RGB-decoder text alignment),
 enabled via the config or `COTRAIN_T2I=1`.
 
-## Latent statistics (required after codec, before Flow/DiT)
-
-After Stage 1 codec training, compute the per-channel mean/std used by Stage 2
-to standardize codec latents (Eq. 15):
-
-```bash
-python scripts/train/compute_latent_stats.py --config configs/gae_64.yaml \
-  --codec-ckpt <trained_codec_checkpoint.pt> \
-  --num-batches 500 --output ckpts/latent_stats_gae_64.pt
-```
-
-Then start Stage 2 Flow/DiT; its config reads `ckpts/latent_stats_gae_64.pt`.
-Use `--full-cov` only when the text-to-image recipe needs the whitening operator.
 
 
 ## Codec evaluation
