@@ -37,6 +37,9 @@ dependencies = [
     "addict",
     "e3nn",
     "numpy",
+    "pyarrow",
+    "orjson",
+    "webdataset",
 ]
 
 [project.optional-dependencies]
