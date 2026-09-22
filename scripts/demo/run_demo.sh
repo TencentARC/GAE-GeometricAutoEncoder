@@ -17,7 +17,7 @@
 #   --ig-scale N          T2I internal-guidance scale (default: 2.0)
 #   -h, --help
 #
-# Env: GAE_HF_REPO (default TencentARC/GAE-D64-1B), HF_TOKEN, PYTHON.
+# Env: GAE_HF_REPO (default TencentARC/GAE-D64-1B), HF_TOKEN, PYTHON, GAE_VENV.
 set -euo pipefail
 
 cd "$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -76,19 +76,45 @@ pick_python() {
 
 run() { echo "[run_demo] + $*"; "$@"; }
 
+# CPython always does `lib64 -> lib` inside a venv. Network filesystems (FUSE)
+# often reject that symlink, so put the env on a local disk unless GAE_VENV is set.
+symlink_ok() {
+  local dir="$1" probe
+  mkdir -p "$dir" || return 1
+  probe="$dir/.gae_symlink_probe_$$"
+  ln -s . "$probe" 2>/dev/null || return 1
+  rm -f "$probe"
+  return 0
+}
+
+pick_venv_dir() {
+  if [[ -n "${GAE_VENV:-}" ]]; then
+    echo "$GAE_VENV"; return
+  fi
+  if symlink_ok "$(pwd)"; then
+    echo "$(pwd)/.venv"; return
+  fi
+  if [[ -d /local-ssd ]] && symlink_ok /local-ssd; then
+    echo "/local-ssd/gae-venv"; return
+  fi
+  echo "${TMPDIR:-/tmp}/gae-venv"
+}
+
 if [[ "$SKIP_INSTALL" != "1" ]]; then
   if [[ -z "${VIRTUAL_ENV:-}" ]]; then
-    if [[ ! -x .venv/bin/python ]]; then
+    VENV_DIR="$(pick_venv_dir)"
+    if [[ ! -x "$VENV_DIR/bin/python" ]]; then
       PY="$(pick_python)"
-      echo "[run_demo] creating .venv with $PY"
-      run "$PY" -m venv .venv
+      echo "[run_demo] creating venv at $VENV_DIR with $PY"
+      mkdir -p "$(dirname "$VENV_DIR")"
+      run "$PY" -m venv "$VENV_DIR"
       # shellcheck disable=SC1091
-      source .venv/bin/activate
+      source "$VENV_DIR/bin/activate"
       run pip install -U pip
       run pip install -e .
     else
       # shellcheck disable=SC1091
-      source .venv/bin/activate
+      source "$VENV_DIR/bin/activate"
     fi
   fi
   if ! python -c "import torch, omegaconf, cv2, gae" >/dev/null 2>&1; then

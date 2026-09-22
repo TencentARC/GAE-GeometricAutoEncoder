@@ -105,6 +105,11 @@ pip install -e .            # installs the `gae` API and the src/ modules
 # or, for a pinned CUDA env:  pip install -r requirements.txt
 ```
 
+If `python -m venv .venv` fails with `Operation not permitted` on `lib64`, the
+checkout is on a filesystem that rejects the venv symlink — create the env on
+local disk instead (`python -m venv /tmp/gae-venv && source /tmp/gae-venv/bin/activate`).
+`run_demo.sh` does that automatically (`GAE_VENV` overrides the location).
+
 Python 3.10–3.12, torch 2.5.1. The DA3-GIANT backbone is pulled from the Hub
 on first use. `python3.13` is not supported (`pip install -e .` will refuse it).
 
@@ -123,7 +128,8 @@ validated Euler + CFG sampler in both cases. This is the fastest way to see GAE
 work; the training and evaluation workflows follow in the next section.
 
 Weights live at [`TencentARC/GAE-D64-1B`](https://huggingface.co/TencentARC/GAE-D64-1B).
-`bash scripts/demo/run_demo.sh` creates `.venv` if needed, installs the package,
+`bash scripts/demo/run_demo.sh` creates a venv if needed (on the local disk
+when the checkout cannot host the `lib64` symlink), installs the package,
 downloads those weights when `ckpts/` is empty, then runs the bundled examples
 (`examples/scenes/` plus `examples/t2i_prompts.txt`):
 
