@@ -3,7 +3,8 @@
 <p align="center">
   <a href="https://arxiv.org/abs/2609.24981"><img src="https://img.shields.io/badge/arXiv-2609.24981-b31b1b.svg" alt="arXiv Paper"></a> &nbsp;
   <a href="https://jiah-cloud.github.io/GAE.github.io/"><img src="https://img.shields.io/badge/Project-Page-Green" alt="Project Page"></a> &nbsp;
-  <a href="https://huggingface.co/TencentARC/GAE-D64-1B"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Weights-blue" alt="Hugging Face Weights"></a>
+  <a href="https://huggingface.co/TencentARC/GAE-D64-1B"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Weights-blue" alt="Hugging Face Weights"></a> &nbsp;
+  <a href="https://www.youtube.com/watch?v=DpPD85IK-Ko"><img src="https://img.shields.io/badge/YouTube-Video-FF0000?logo=youtube&amp;logoColor=white" alt="YouTube Video"></a>
 </p>
 
 <p align="center">
