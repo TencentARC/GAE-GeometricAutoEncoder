@@ -1112,7 +1112,7 @@ def _synthesize_free_trajectory(
     anchor_c2w: np.ndarray,
     n: int,
     *,
-    motion: str = "wander",
+    motion: str = "forward",
     speed: float = 0.06,
     yaw_deg: float = 24.0,
     pitch_deg: float = 6.0,
@@ -2807,7 +2807,7 @@ def main():
     # requested clip fits in one denoising chunk (T == V).  The Space uses
     # exactly that shape for 17/33/81-view presets; treating it as ordinary
     # non-autoregressive inference leaves the identity poses from the manifest
-    # in place, making Wander/Orbit/Spiral/Drive appear frozen.
+    # in place, making synthetic trajectories appear frozen.
     free_rollout_requested = bool(
         os.environ.get("FREE_ROLLOUT")
         and args.mode in ("recon", "generate")
@@ -3704,7 +3704,7 @@ def main():
                 _K0 = intri_list[0]
                 pose_list = _synthesize_free_trajectory(
                     _anchor, _ncam,
-                    motion=os.environ.get("FREE_ROLLOUT_MOTION", "wander"),
+                    motion=os.environ.get("FREE_ROLLOUT_MOTION", "forward"),
                     speed=float(os.environ.get("FREE_ROLLOUT_SPEED", "0.06")),
                     yaw_deg=float(os.environ.get("FREE_ROLLOUT_YAW_DEG", "24")),
                     pitch_deg=float(os.environ.get("FREE_ROLLOUT_PITCH_DEG", "6")),
@@ -3716,7 +3716,7 @@ def main():
                 imgs = imgs[:1]
                 imgs_01 = imgs_01[:1]
                 actual_v = _ncam
-                print(f"    [free-rollout] synthetic '{os.environ.get('FREE_ROLLOUT_MOTION','wander')}' "
+                print(f"    [free-rollout] synthetic '{os.environ.get('FREE_ROLLOUT_MOTION','forward')}' "
                       f"trajectory: {T} frames from {_ncam} cam poses "
                       f"(chunk={V}, roll={roll_cond_num}, cond={scene_cond})")
 

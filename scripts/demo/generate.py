@@ -66,8 +66,10 @@ def parse_args() -> tuple[argparse.Namespace, list[str]]:
     parser.add_argument(
         "--free-rollout", action="store_true",
         help="Ignore GT poses and synthesize a camera path (--trajectory / --speed).")
-    parser.add_argument("--trajectory", choices=("wander", "orbit", "spiral", "drive"),
-                        default="wander")
+    parser.add_argument(
+        "--trajectory", choices=("forward", "backward", "turn_left", "turn_right"),
+        default="forward",
+    )
     parser.add_argument("--speed", type=float, default=0.06)
     parser.add_argument(
         "--trajectory-reference-poses", type=Path, default=None,

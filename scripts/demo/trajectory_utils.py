@@ -18,7 +18,7 @@ def trajectory_extent(poses: np.ndarray) -> float:
     if len(pos) < 2:
         return 0.0
     # N is at most 81 for the public demo; the exact diameter is more robust
-    # than path length for comparing straight, orbiting, and wandering paths.
+    # than path length for comparing straight and turning paths.
     distances = pos[:, None, :] - pos[None, :, :]
     return float(np.linalg.norm(distances, axis=-1).max())
 
@@ -50,7 +50,7 @@ def synthesize_free_trajectory(
     anchor_c2w: np.ndarray,
     n: int,
     *,
-    motion: str = "wander",
+    motion: str = "forward",
     speed: float = 0.06,
     yaw_deg: float = 24.0,
     pitch_deg: float = 6.0,
@@ -66,8 +66,9 @@ def synthesize_free_trajectory(
     ``target_extent`` is the spatial diameter of the selected example pose
     prefix, so 17/33/81-view synthetic paths have the same metric scene scale
     as the exact repository example at the same view count.
-    ``target_path_length`` is retained for backwards compatibility. Drive uses a positive speed
-    envelope and therefore never reverses its forward motion.
+    ``target_path_length`` is retained for backwards compatibility.  Forward
+    and backward travel follow the camera's local viewing direction; turn
+    trajectories keep the camera center fixed and apply a small eased yaw.
     """
     if n < 1:
         raise ValueError("n must be positive")
@@ -82,36 +83,36 @@ def synthesize_free_trajectory(
     f = np.array([1.0, 2.3, 0.5]) * w
     poses: list[np.ndarray] = []
     pos = p0.copy()
+    # Keep old names as aliases for callers outside the public app.
+    aliases = {"drive": "forward", "wander": "turn_left", "orbit": "turn_right", "spiral": "forward"}
+    motion = aliases.get(motion, motion)
+    if motion not in {"forward", "backward", "turn_left", "turn_right"}:
+        raise ValueError(f"unknown trajectory motion: {motion!r}")
     for t in range(n):
-        if motion == "orbit":
-            yaw = yaw_a * 3.0 * (t / max(n - 1, 1))
-            pitch = pitch_a * np.sin(f[2] * t + ph[2])
-            spd, strafe, bob = 0.0, speed, 0.0
-        elif motion == "spiral":
-            yaw = yaw_a * 2.0 * (t / max(n - 1, 1))
-            pitch = pitch_a * np.sin(f[2] * t + ph[2])
-            spd, strafe = speed * 0.5, speed * 0.5
-            bob = speed * 0.2 * np.sin(f[2] * t + ph[5])
-        elif motion == "drive":
-            # Forward dolly: speed stays positive while yaw gently varies.
-            yaw = yaw_a * (0.6 * np.sin(f[0] * t + ph[0])
-                           + 0.4 * np.sin(f[1] * t + ph[1]))
-            pitch = 0.0
-            spd = speed * (0.65 + 0.35 * np.sin(f[1] * t + ph[3]))
-            strafe, bob = 0.0, 0.0
-        else:  # wander
-            yaw = yaw_a * (0.6 * np.sin(f[0] * t + ph[0])
-                           + 0.4 * np.sin(f[1] * t + ph[1]))
-            pitch = pitch_a * np.sin(f[2] * t + ph[2])
-            spd = speed * (0.5 + 0.5 * np.sin(f[1] * t + ph[3]))
-            strafe = speed * 0.6 * np.sin(f[0] * t + ph[4])
-            bob = speed * 0.25 * np.sin(2.0 * f[2] * t + ph[5])
+        u = t / max(n - 1, 1)
+        # Smoothstep removes the abrupt velocity change at the endpoints.
+        ease = u * u * (3.0 - 2.0 * u)
+        if motion in ("turn_left", "turn_right"):
+            # Positive camera-yaw is a left turn in the OpenCV convention.
+            yaw = (1.0 if motion == "turn_left" else -1.0) * np.deg2rad(12.0) * ease
+            pitch = np.deg2rad(2.0) * np.sin(np.pi * u)
+            spd, strafe, bob = 0.0, 0.0, 0.0
+        else:
+            yaw = np.deg2rad(1.5) * np.sin(np.pi * u)
+            pitch = np.deg2rad(1.0) * np.sin(np.pi * u)
+            travel_sign = 1.0 if motion == "forward" else -1.0
+            # The sign is applied once below to the local forward vector.
+            spd = speed * (0.75 + 0.25 * np.sin(np.pi * u))
+            strafe = bob = 0.0
         cy, sy = np.cos(yaw), np.sin(yaw)
         cp, sp = np.cos(pitch), np.sin(pitch)
         Ry = np.array([[cy, 0.0, sy], [0.0, 1.0, 0.0], [-sy, 0.0, cy]])
         Rx = np.array([[1.0, 0.0, 0.0], [0.0, cp, -sp], [0.0, sp, cp]])
         R = R0 @ (Ry @ Rx)
-        fwd = fwd_sign * (-R[:, 2])
+        if motion in ("forward", "backward"):
+            fwd = (1.0 if motion == "forward" else -1.0) * (-R[:, 2])
+        else:
+            fwd = np.zeros(3, dtype=np.float64)
         right, up = R[:, 0], R[:, 1]
         pos = pos + spd * fwd + strafe * right + bob * up
         c2w = np.eye(4, dtype=np.float64)
@@ -125,7 +126,10 @@ def synthesize_free_trajectory(
         origin = poses[0][:3, 3].copy()
         for pose in poses:
                 pose[:3, 3] = origin + (pose[:3, 3] - origin) * scale_vec
-    if target_direction is not None and len(poses) > 1:
+    # Forward/backward are intentional signed motions; do not mirror them to
+    # match the example path's direction.  Direction matching is only useful
+    # for the turn previews and legacy callers.
+    if target_direction is not None and motion not in ("forward", "backward") and len(poses) > 1:
         direction = np.asarray(target_direction, dtype=np.float64).reshape(3)
         norm = np.linalg.norm(direction)
         if norm > 1e-9:

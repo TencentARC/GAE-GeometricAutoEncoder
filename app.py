@@ -34,15 +34,15 @@ OUTPUT_ROOT = Path(os.environ.get("GAE_SPACE_OUTPUT_DIR", "/tmp/gae-space-result
 
 TRAJECTORIES = [
     ("Example camera poses — repository scale (recommended)", "example"),
-    ("Wander — gentle turn-dominant motion", "wander"),
-    ("Orbit — arc around the scene", "orbit"),
-    ("Spiral — rising corkscrew", "spiral"),
-    ("Drive — forward camera move", "drive"),
+    ("Forward — smooth forward move", "forward"),
+    ("Backward — smooth backward move", "backward"),
+    ("Turn left — gentle smooth rotation", "turn_left"),
+    ("Turn right — gentle smooth rotation", "turn_right"),
 ]
 VIEW_CHOICES = [17, 33, 81]
 # Uploaded images do not have a sibling *_poses.npz.  Use a shipped, moving
 # 81-frame path as the fallback so the default trajectory has the same metric
-# scale as a repository example instead of the nearly-static synthetic wander.
+# scale as a repository example instead of a nearly-static synthetic path.
 DEFAULT_EXAMPLE_POSES = ROOT / "examples" / "scenes" / "forest_lake_trail_poses.npz"
 
 
@@ -89,7 +89,7 @@ def _vae_video_examples() -> list[list[str]]:
 VAE_VIDEO_EXAMPLES = _vae_video_examples()
 
 
-def _duration_i2v(_image=None, _prompt="", _trajectory="wander", views: int = 17, steps: int = 25, *_args, **_kwargs) -> int:
+def _duration_i2v(_image=None, _prompt="", _trajectory="forward", views: int = 17, steps: int = 25, *_args, **_kwargs) -> int:
     # This is a reservation hint for ZeroGPU; dedicated GPU Spaces can run longer.
     return min(900, max(120, int(90 + int(views) * int(steps) * 0.35)))
 

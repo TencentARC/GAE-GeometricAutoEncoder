@@ -32,10 +32,10 @@ def _plot_paths(paths: dict[str, np.ndarray], output: Path, title: str) -> None:
 
     colors = {
         "Example poses": "#222222",
-        "Wander": "#4285f4",
-        "Orbit": "#34a853",
-        "Spiral": "#a142f4",
-        "Drive": "#ea4335",
+        "Forward": "#4285f4",
+        "Backward": "#ea4335",
+        "Turn left": "#34a853",
+        "Turn right": "#a142f4",
     }
     fig, axes = plt.subplots(2, 3, figsize=(17, 10), constrained_layout=True)
     axes = axes.ravel()
@@ -113,8 +113,8 @@ def main() -> None:
     n = min(int(args.num_views), len(gt))
     paths: dict[str, np.ndarray] = {"Example poses": gt[:n]}
     stats: dict[str, dict[str, object]] = {}
-    for name, motion in (("Wander", "wander"), ("Orbit", "orbit"),
-                         ("Spiral", "spiral"), ("Drive", "drive")):
+    for name, motion in (("Forward", "forward"), ("Backward", "backward"),
+                         ("Turn left", "turn_left"), ("Turn right", "turn_right")):
         paths[name] = np.asarray(synthesize_free_trajectory(
             anchor, n, motion=motion, speed=args.speed,
             yaw_deg=args.yaw_deg, pitch_deg=args.pitch_deg, seed=args.seed,

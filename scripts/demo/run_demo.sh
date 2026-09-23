@@ -3,7 +3,7 @@
 #
 #   bash scripts/demo/run_demo.sh
 #   bash scripts/demo/run_demo.sh --smoke
-#   bash scripts/demo/run_demo.sh --task i2v -- --trajectory orbit
+#   bash scripts/demo/run_demo.sh --task i2v -- --trajectory forward
 #
 # Options:
 #   --size {64|128}       checkpoint pair (default: 64)
