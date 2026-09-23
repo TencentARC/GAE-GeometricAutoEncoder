@@ -110,7 +110,10 @@ def preview_i2v_trajectory(image: str | None, trajectory: str, views: int) -> st
     try:
         reference_poses = load_reference_poses(reference, int(views))
         poses = trajectory_for_preview(reference_poses, trajectory, int(views))
-        out_dir = OUTPUT_ROOT / "trajectory-previews"
+        # Keep previews in a dedicated directory under the repository working
+        # tree. Gradio allows files below the current working directory without
+        # exposing the rest of OUTPUT_ROOT (which may contain other results).
+        out_dir = ROOT / ".gradio_previews"
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"{trajectory}-{int(views)}-{uuid.uuid4().hex}.png"
         render_trajectory_preview(
