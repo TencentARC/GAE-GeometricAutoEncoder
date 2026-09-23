@@ -1137,11 +1137,19 @@ def _synthesize_free_trajectory(
             target_extents = None
     except ValueError:
         target_extents = None
+    direction_raw = os.environ.get("FREE_ROLLOUT_TARGET_DIRECTION", "")
+    try:
+        target_direction = np.asarray([float(v) for v in direction_raw.split(",")], dtype=np.float64) if direction_raw else None
+        if target_direction is not None and target_direction.shape != (3,):
+            target_direction = None
+    except ValueError:
+        target_direction = None
     return synthesize_free_trajectory(
         anchor_c2w, n, motion=motion, speed=speed, yaw_deg=yaw_deg,
         pitch_deg=pitch_deg, fwd_sign=fwd_sign, seed=seed,
         target_extent=target,
         target_extents_xyz=target_extents,
+        target_direction=target_direction,
     )
 
 def _save_mp4(frames_rgb: list, path: str, fps: int = 4):

@@ -23,6 +23,17 @@ def trajectory_extent(poses: np.ndarray) -> float:
     return float(np.linalg.norm(distances, axis=-1).max())
 
 
+def reference_forward_sign(poses: np.ndarray) -> float:
+    """Return the sign matching the reference path's viewing direction."""
+    poses = np.asarray(poses, dtype=np.float64)
+    if len(poses) < 2:
+        return 1.0
+    delta = poses[-1, :3, 3] - poses[0, :3, 3]
+    view_forward = -poses[0, :3, 2]
+    score = float(np.dot(delta, view_forward))
+    return -1.0 if score < 0.0 else 1.0
+
+
 def load_reference_poses(path: str | Path, n: int) -> np.ndarray:
     data = np.load(path)
     if "c2w" not in data:
@@ -48,6 +59,7 @@ def synthesize_free_trajectory(
     target_path_length: float | None = None,
     target_extent: float | None = None,
     target_extents_xyz: np.ndarray | None = None,
+    target_direction: np.ndarray | None = None,
 ) -> list[np.ndarray]:
     """Generate a smooth path and optionally match a reference path length.
 
@@ -112,7 +124,24 @@ def synthesize_free_trajectory(
         scale_vec = np.divide(target_vec, actual_vec, out=np.ones(3), where=actual_vec > 1e-9)
         origin = poses[0][:3, 3].copy()
         for pose in poses:
-            pose[:3, 3] = origin + (pose[:3, 3] - origin) * scale_vec
+                pose[:3, 3] = origin + (pose[:3, 3] - origin) * scale_vec
+    if target_direction is not None and len(poses) > 1:
+        direction = np.asarray(target_direction, dtype=np.float64).reshape(3)
+        norm = np.linalg.norm(direction)
+        if norm > 1e-9:
+            direction /= norm
+            origin = poses[0][:3, 3].copy()
+            delta = poses[-1][:3, 3] - origin
+            if float(np.dot(delta, direction)) < 0.0:
+                for pose in poses:
+                    rel = pose[:3, 3] - origin
+                    pose[:3, 3] = origin + rel - 2.0 * np.dot(rel, direction) * direction
+                if target_extents_xyz is not None:
+                    target_vec = np.asarray(target_extents_xyz, dtype=np.float64).reshape(3)
+                    actual_vec = np.ptp(np.asarray(poses)[:, :3, 3], axis=0)
+                    scale_vec = np.divide(target_vec, actual_vec, out=np.ones(3), where=actual_vec > 1e-9)
+                    for pose in poses:
+                        pose[:3, 3] = origin + (pose[:3, 3] - origin) * scale_vec
     else:
         target = target_extent if target_extent is not None else target_path_length
         if target is not None and target > 0.0:
@@ -134,7 +163,9 @@ def trajectory_for_preview(
         return ref
     return np.asarray(synthesize_free_trajectory(
         ref[0], len(ref), motion=motion, speed=speed, seed=seed,
-        target_extents_xyz=np.ptp(ref[:, :3, 3], axis=0)))
+        fwd_sign=reference_forward_sign(ref),
+        target_extents_xyz=np.ptp(ref[:, :3, 3], axis=0),
+        target_direction=ref[-1, :3, 3] - ref[0, :3, 3]))
 
 
 def render_trajectory_preview(poses: np.ndarray, output: str | Path, title: str) -> None:

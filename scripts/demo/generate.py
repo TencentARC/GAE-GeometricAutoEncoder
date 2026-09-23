@@ -27,7 +27,9 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from scripts.demo.trajectory_utils import load_reference_poses, trajectory_extent
+from scripts.demo.trajectory_utils import (
+    load_reference_poses, reference_forward_sign, trajectory_extent,
+)
 
 
 def parse_args() -> tuple[argparse.Namespace, list[str]]:
@@ -263,6 +265,10 @@ def main() -> int:
                 env["FREE_ROLLOUT_TARGET_EXTENT"] = str(target)
                 env["FREE_ROLLOUT_TARGET_EXTENTS_XYZ"] = ",".join(
                     f"{float(v):.9g}" for v in np.ptp(ref[:, :3, 3], axis=0)
+                )
+                env["FREE_ROLLOUT_FWD_SIGN"] = str(reference_forward_sign(ref))
+                env["FREE_ROLLOUT_TARGET_DIRECTION"] = ",".join(
+                    f"{float(v):.9g}" for v in (ref[-1, :3, 3] - ref[0, :3, 3])
                 )
                 print(
                     f"[generate] synthetic trajectory diameter: {target:.4f}m "

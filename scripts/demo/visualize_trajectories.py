@@ -18,7 +18,10 @@ import numpy as np
 # implementation from the evaluator.
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from scripts.demo.trajectory_utils import synthesize_free_trajectory, path_length, trajectory_extent
+from scripts.demo.trajectory_utils import (
+    synthesize_free_trajectory, path_length, trajectory_extent,
+    reference_forward_sign,
+)
 
 
 def _plot_paths(paths: dict[str, np.ndarray], output: Path, title: str) -> None:
@@ -114,7 +117,10 @@ def main() -> None:
                          ("Spiral", "spiral"), ("Drive", "drive")):
         paths[name] = np.asarray(synthesize_free_trajectory(
             anchor, n, motion=motion, speed=args.speed,
-            yaw_deg=args.yaw_deg, pitch_deg=args.pitch_deg, seed=args.seed, target_extents_xyz=np.ptp(gt[:n, :3, 3], axis=0)))
+            yaw_deg=args.yaw_deg, pitch_deg=args.pitch_deg, seed=args.seed,
+            fwd_sign=reference_forward_sign(gt[:n]),
+            target_extents_xyz=np.ptp(gt[:n, :3, 3], axis=0),
+            target_direction=gt[n - 1, :3, 3] - gt[0, :3, 3]))
 
     for name, pose in paths.items():
         pos = pose[:, :3, 3]
