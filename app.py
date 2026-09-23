@@ -400,7 +400,7 @@ from this repository's `examples/` directory and use the released
                 with gr.Row():
                     with gr.Column(scale=1):
                         vae_image = gr.Video(
-                            label="Input RGB video", type="filepath", height=300,
+                            label="Input RGB video", height=300,
                         )
                         vae_run = gr.Button("Reconstruct with VAE", variant="primary")
                     with gr.Column(scale=1):
