@@ -348,7 +348,7 @@ from this repository's `examples/` directory and use the released
                         examples=VAE_VIDEO_EXAMPLES,
                         inputs=[vae_image],
                         label="VAE reconstruction examples",
-                        examples_per_page=6,
+                        examples_per_page=max(1, len(VAE_VIDEO_EXAMPLES)),
                     )
                 vae_run.click(
                     reconstruct_vae,
