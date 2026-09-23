@@ -10,7 +10,7 @@ camera-to-world poses and per-frame intrinsics. `manifest.json` collects all of
 these plus the source dataset and license for every scene. The GT clips (`<name>_gt.mp4`) are git-ignored - regenerable
 from the eval dumps and not distributed.
 
-This repository ships eight redistributable demo scenes. The two Pexels scenes
+This repository ships six redistributable demo scenes. The two Pexels scenes
 retain their Pexels attribution; the six additional release scenes are
 distributed with the release maintainer's permission.
 
@@ -19,11 +19,9 @@ distributed with the release maintainer's permission.
 | `forest_lake_trail` | pine-forest lakeside trail |
 | `autumn_waterfall` | autumn forest stream + waterfall |
 | `bedroom` | bedroom interior |
-| `historic_hall` | historic hall / gallery interior |
 | `hillside_car` | car in a semiarid hillside settlement |
 | `city_street` | sunny urban street with palm trees |
 | `office_desk` | cluttered home office desk |
-| `museum_gallery` | museum mask exhibit |
 
 `<name>_poses.npz` contains `c2w` (Nx4x4, OpenCV camera-to-world), `K`
 (Nx3x3, pixels), `image_size` (H, W), `cond_num`, and `fps`.
