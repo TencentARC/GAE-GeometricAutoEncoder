@@ -4513,6 +4513,11 @@ def main():
                         rows = [depth_to_numpy_img(_dep_views[vi]) for vi in range(actual_v)]
                         Image.fromarray(np.concatenate(rows, axis=0)).save(
                             os.path.join(ds_out_dir, f"{s_idx:03d}_depth.png"))
+                        _save_mp4(
+                            rows,
+                            os.path.join(ds_out_dir, f"{s_idx:03d}_depth.mp4"),
+                            fps=args.video_fps,
+                        )
 
                 # ── Dump direct geometry for da3_direct (level-0 propagate) ──
                 # Same NPZ schema as the VAE backend so scripts/
@@ -4668,6 +4673,12 @@ def main():
                             rows.append(np.concatenate(row, axis=1))
                         Image.fromarray(np.concatenate(rows, axis=0)).save(
                             os.path.join(ds_out_dir, f"{s_idx:03d}_depth.png"))
+                        _save_mp4(
+                            [depth_to_numpy_img(gen_depth[vi])
+                             for vi in range(actual_v)],
+                            os.path.join(ds_out_dir, f"{s_idx:03d}_depth.mp4"),
+                            fps=args.video_fps,
+                        )
 
                 # ── Save input (GT) + predicted camera poses to compact NPZ ──
                 # input_c2w : dataset camera-to-world poses fed to the model

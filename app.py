@@ -164,6 +164,8 @@ def generate_i2v(
         command += ["--poses", str(pose_file)]
     _, elapsed = _run(command, run_dir, timeout=max(1800, _duration_i2v(views, steps) * 2))
     video = _latest(run_dir, (".mp4",))
+    video = _latest(run_dir, ("_pred.mp4",)) or video
+    depth_video = _latest(run_dir, ("_depth.mp4",))
     path_preview = _latest(run_dir, ("_trajectory.png",))
     depth = _latest(run_dir, ("_depth.png",))
     pointcloud = _latest(run_dir, ("_pointcloud.ply",))
@@ -179,7 +181,14 @@ def generate_i2v(
         f"GAE-64 · {views} views · {steps} Euler steps · seed {seed} · {mode} · "
         f"{elapsed:.1f}s\n\n[Download the full run log](file={run_dir / 'space_run.log'})"
     )
-    return str(video), str(path_preview) if path_preview else None, str(depth) if depth else None, str(pointcloud) if pointcloud else None, status
+    return (
+        str(video),
+        str(depth_video) if depth_video else None,
+        str(path_preview) if path_preview else None,
+        str(depth) if depth else None,
+        str(pointcloud) if pointcloud else None,
+        status,
+    )
 
 
 @spaces.GPU(duration=_duration_t2i)
@@ -237,8 +246,10 @@ from this repository's `examples/` directory and use the released
                         i2v_trajectory = gr.Dropdown(label="Camera trajectory for uploaded images", choices=TRAJECTORIES, value="example")
                         i2v_run = gr.Button("Generate video", variant="primary")
                     with gr.Column(scale=1):
-                        i2v_video = gr.Video(label="Generated video", autoplay=True, loop=True, height=300)
-                        i2v_path = gr.Image(label="Decoded camera path", height=220)
+                        i2v_video = gr.Video(label="Generated RGB video", autoplay=True, loop=True, height=300)
+                        i2v_depth_video = gr.Video(label="Decoded depth video", autoplay=True, loop=True, height=300)
+                with gr.Row():
+                    i2v_path = gr.Image(label="Decoded camera path", height=220)
                 with gr.Row():
                     i2v_depth = gr.Image(label="Last decoded depth", height=220)
                     i2v_cloud = gr.File(label="Point cloud (.ply)")
@@ -261,7 +272,7 @@ from this repository's `examples/` directory and use the released
                 i2v_run.click(
                     generate_i2v,
                     inputs=[i2v_image, i2v_prompt, i2v_trajectory, i2v_views, i2v_steps, i2v_cfg, i2v_seed, i2v_stride],
-                    outputs=[i2v_video, i2v_path, i2v_depth, i2v_cloud, i2v_status],
+                    outputs=[i2v_video, i2v_depth_video, i2v_path, i2v_depth, i2v_cloud, i2v_status],
                 )
             with gr.Tab("Text → image"):
                 with gr.Row():

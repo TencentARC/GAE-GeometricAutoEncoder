@@ -184,6 +184,7 @@ the `t2i` co-train branch). Guidance defaults to internal guidance (`--guidance 
 This repository includes a Gradio Space app in [`app.py`](app.py). It has two tabs:
 
 - **Image → camera-controlled video**: uses the images, prompts, and matching camera poses in `examples/scenes/`; uploaded images default to a shipped example pose path, with synthetic trajectories available as alternatives.
+- The I2V Space displays the generated RGB video and the decoded depth visualization video side by side; the final depth frame is also available as a PNG.
 - **Text → image**: uses the prompts in `examples/t2i_prompts.txt` and decodes depth plus a point cloud alongside the generated image.
 
 For uploaded images, the default camera option uses the shipped
