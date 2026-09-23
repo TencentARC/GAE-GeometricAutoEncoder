@@ -176,7 +176,6 @@ def render_trajectory_preview(poses: np.ndarray, output: str | Path, title: str)
 
     poses = np.asarray(poses, dtype=np.float64)
     pos = poses[:, :3, 3]
-    fwd = -poses[:, :3, 2]
     fig = plt.figure(figsize=(8, 7))
     fig.subplots_adjust(left=0.06, right=0.96, bottom=0.08, top=0.82)
     ax = fig.add_subplot(111, projection="3d")
@@ -188,14 +187,6 @@ def render_trajectory_preview(poses: np.ndarray, output: str | Path, title: str)
                 color=colors[i], lw=2.8, solid_capstyle="round")
     ax.scatter(*[pos[0, i] for i in (0, 2, 1)], c="#34a853", s=65, label="start")
     ax.scatter(*[pos[-1, i] for i in (0, 2, 1)], c="#ea4335", s=65, label="end")
-    stride = max(1, len(pos) // 10)
-    span = max(float(np.ptp(pos, axis=0).max()), 1e-3)
-    arrow = span * 0.09
-    for i in range(0, len(pos), stride):
-        ax.quiver(pos[i, 0], pos[i, 2], pos[i, 1],
-                  fwd[i, 0], fwd[i, 2], fwd[i, 1],
-                  length=arrow, normalize=True, color="#e8710a", alpha=0.8,
-                  arrow_length_ratio=0.25)
     ax.set_xlabel("world x", labelpad=8)
     ax.set_ylabel("world z (depth)", labelpad=8)
     ax.set_zlabel("world y (up)", labelpad=8)
