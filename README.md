@@ -177,10 +177,11 @@ the `t2i` co-train branch). Guidance defaults to internal guidance (`--guidance 
 `--num-images N` for batches. A curated prompt list lives in
 [`examples/t2i_prompts.txt`](examples/t2i_prompts.txt).
 
-### 🔁 VAE reconstruction (RGB + depth)
+### 🔁 VAE reconstruction (RGB + depth + point cloud)
 
 The reconstruction demo encodes each input video with the released codec and
-decodes RGB plus viridis-colored depth. Run the complete named scene gallery:
+decodes RGB, viridis-colored depth, and a point cloud from the predicted depth
+and rays. Run the complete named scene gallery:
 
 ```bash
 bash scripts/demo/run_demo.sh --task recon
@@ -196,20 +197,23 @@ python scripts/demo/reconstruct_vae.py \
   --output results/vae_recon
 ```
 
-Outputs are written as `results/vae_recon/<scene>/{rgb_recon.mp4,depth_recon.mp4}`.
+Outputs are written as `results/vae_recon/<scene>/{rgb_recon.mp4,depth_recon.mp4,recon_pointcloud.ply}`.
+The PLY is built directly from the decoded depth and ray prediction, with a
+default 4-pixel stride (`--pc-stride` controls the density).
 
 ---
 
 ## 🤗 Hugging Face Space
 
-This repository includes a Gradio Space app in [`app.py`](app.py). It has two tabs:
+This repository includes a Gradio Space app in [`app.py`](app.py). It has three tabs:
 
 - **Image → camera-controlled video**: uses the images, prompts, and matching camera poses in `examples/scenes/`; uploaded images default to a shipped example pose path, with synthetic trajectories available as alternatives.
 - The I2V Space displays the generated RGB video and the decoded depth visualization video side by side; the final depth frame is also available as a PNG.
 - The camera-trajectory selector shows a pose preview for the selected input and view count. Wander/Orbit/Spiral/Drive are normalized to the selected example pose spatial diameter; Drive is a monotonic forward dolly with gentle yaw.
 - **Text → image**: uses the prompts in `examples/t2i_prompts.txt` and decodes depth plus a point cloud alongside the generated image.
 - **VAE Reconstruction (Codec)**: reconstructs the named videos in
-  `examples/recon_videos/` and displays RGB plus viridis-colored depth videos.
+  `examples/recon_videos/`, displays RGB plus viridis-colored depth videos, and
+  provides the decoded point cloud as a downloadable PLY.
   The app-equivalent direct command is:
 
   ```bash
@@ -374,9 +378,9 @@ does not block `torchrun` on a cold scan (idempotent, safe to re-run).
 
 Use the released codec through the public `GAE` API. The command below downloads
 the codec and its geometry dependencies from Hugging Face, reconstructs every
-image in `examples/scenes/`, and writes `rgb_recon.png` plus `depth_recon.png`
-for each scene. The same script accepts an RGB video and writes reconstructed
-RGB/depth MP4 files; the Gradio VAE tab includes eight named representative
+image in `examples/scenes/`, and writes `rgb_recon.png`, `depth_recon.png`, and
+`recon_pointcloud.ply` for each scene. The same script accepts an RGB video and
+writes reconstructed RGB/depth MP4 files plus a PLY point cloud; the Gradio VAE tab includes eight named representative
 `d64 step-0018500` evaluation inputs from `examples/recon_videos/`.
 
 ```bash

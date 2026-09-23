@@ -506,8 +506,21 @@ class GAE(nn.Module):
             written[f"rgb_{i}"] = str(p)
         depth = outputs.get("depth")
         if depth is not None:
+            depth_views = depth
+            if depth_views.ndim == 5 and depth_views.shape[0] == 1:
+                depth_views = depth_views[0]
+            if depth_views.ndim == 4 and depth_views.shape[0] == 1 and depth_views.shape[1] != 1:
+                depth_views = depth_views[0]
+            if depth_views.ndim == 4 and depth_views.shape[1] == 1:
+                depth_views = depth_views[:, 0]
+            if depth_views.ndim == 2:
+                depth_views = depth_views.unsqueeze(0)
+            if depth_views.ndim != 3 or depth_views.shape[0] != v:
+                raise RuntimeError(
+                    f"unexpected depth shape for {v} views: {tuple(depth.shape)}"
+                )
             dep_path = out_dir / f"{stem}_depth.png"
-            depth_frames = depth_to_numpy_video(depth[:v])
+            depth_frames = depth_to_numpy_video(depth_views)
             Image.fromarray(depth_frames[0]).save(dep_path)
             written["depth"] = str(dep_path)
             if v > 1:
@@ -518,7 +531,7 @@ class GAE(nn.Module):
                 written["depth_strip"] = str(strip_path)
         if depth is not None and outputs.get("ray") is not None:
             xyz, pc_rgb = _scene_pointcloud_from_dpt(
-                outputs, depth, rgb, v, h, w, rgb.device, stride=pc_stride,
+                outputs, depth_views, rgb, v, h, w, rgb.device, stride=pc_stride,
             )
             ply = out_dir / f"{stem}_pointcloud.ply"
             save_pointcloud_ply(str(ply), xyz, pc_rgb)

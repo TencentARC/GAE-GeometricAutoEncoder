@@ -1,4 +1,4 @@
-"""Run the released GAE codec reconstruction on one or all scene examples."""
+"""Run the released GAE codec reconstruction and export RGB/depth/point cloud."""
 from __future__ import annotations
 
 import argparse
@@ -64,6 +64,10 @@ def main() -> None:
     parser.add_argument("--hf-repo", default="TencentARC/GAE-D64-1B")
     parser.add_argument("--cache-dir", type=Path, default=Path("ckpts"))
     parser.add_argument("--resolution", type=int, nargs=2, default=(378, 672), metavar=("H", "W"))
+    parser.add_argument("--pc-stride", type=int, default=4,
+                        help="Keep every Nth pixel when exporting the reconstructed point cloud.")
+    parser.add_argument("--no-pointcloud", action="store_true",
+                        help="Skip reconstructed point-cloud export.")
     parser.add_argument("--all-examples", action="store_true")
     args = parser.parse_args()
     if args.image is None and args.video is None and not args.all_examples:
@@ -126,6 +130,18 @@ def main() -> None:
                 Image.fromarray(depth_frames[0]).save(out_dir / "depth_recon.png")
             else:
                 _save_video(np.stack(depth_frames), out_dir / "depth_recon.mp4", fps)
+        if not args.no_pointcloud:
+            # Export the point cloud from the model's decoded ray + depth
+            # prediction.  This is the same geometry path used by the public
+            # I2V/T2I demos; it does not re-estimate geometry from RGB frames.
+            written = model.save_outputs(
+                out, out_dir, stem="recon", pc_stride=max(int(args.pc_stride), 1)
+            )
+            if "ply" not in written:
+                raise RuntimeError(
+                    "VAE reconstruction returned no ray output; cannot export point cloud"
+                )
+            print(f"pointcloud -> {written['ply']} ({written.get('n_points', '?')} points)")
         print(f"{input_path} -> {out_dir}")
 
 

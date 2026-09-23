@@ -287,7 +287,7 @@ def generate_t2i(prompt: str, steps: int, cfg_scale: float, seed: int, pc_stride
 
 @spaces.GPU(duration=900)
 def reconstruct_vae(image: str | None):
-    """Run codec-only reconstruction and expose RGB/depth outputs in the app."""
+    """Run codec-only reconstruction and expose RGB/depth/point-cloud outputs."""
     if not image:
         raise gr.Error("Upload an image first.")
     run_dir = OUTPUT_ROOT / f"vae-recon-{uuid.uuid4().hex}"
@@ -297,17 +297,24 @@ def reconstruct_vae(image: str | None):
         "--video", str(image),
         "--hf-repo", HF_REPO,
         "--cache-dir", str(CKPT_DIR),
+        "--pc-stride", "4",
         "--output", str(run_dir),
     ]
     _, elapsed = _run(command, run_dir, timeout=1800)
     stem_dir = run_dir / Path(image).stem
     rgb = stem_dir / "rgb_recon.mp4"
     depth = stem_dir / "depth_recon.mp4"
+    pointcloud = stem_dir / "recon_pointcloud.ply"
     if not rgb.is_file():
         raise gr.Error("VAE reconstruction completed but no RGB output was produced.")
-    return str(rgb), str(depth) if depth.is_file() else None, (
+    if not pointcloud.is_file():
+        raise gr.Error("VAE reconstruction completed but no point cloud was produced.")
+    return (
+        str(rgb),
+        str(depth) if depth.is_file() else None,
+        str(pointcloud) if pointcloud.is_file() else None,
         f"GAE-64 VAE reconstruction · {elapsed:.1f}s\n\n"
-        f"[Download the full run log](file={run_dir / 'space_run.log'})"
+        f"[Download the full run log](file={run_dir / 'space_run.log'})",
     )
 
 
@@ -331,7 +338,8 @@ from this repository's `examples/` directory and use the released
             with gr.Tab("VAE Reconstruction (Codec)"):
                 gr.Markdown(
                     "Encode an RGB video with the GAE codec and decode it back to RGB "
-                    "and depth. This tab does not run Flow/DiT generation."
+                    "and depth, plus a point cloud reconstructed from the predicted "
+                    "depth and rays. This tab does not run Flow/DiT generation."
                 )
                 with gr.Row():
                     with gr.Column(scale=1):
@@ -342,6 +350,7 @@ from this repository's `examples/` directory and use the released
                     with gr.Column(scale=1):
                         vae_rgb = gr.Video(label="Reconstructed RGB video", autoplay=True, loop=True, height=300)
                         vae_depth = gr.Video(label="Reconstructed depth video", autoplay=True, loop=True, height=300)
+                        vae_cloud = gr.File(label="Reconstructed point cloud (.ply)")
                 vae_status = gr.Markdown()
                 if VAE_VIDEO_EXAMPLES:
                     gr.Examples(
@@ -353,7 +362,7 @@ from this repository's `examples/` directory and use the released
                 vae_run.click(
                     reconstruct_vae,
                     inputs=[vae_image],
-                    outputs=[vae_rgb, vae_depth, vae_status],
+                    outputs=[vae_rgb, vae_depth, vae_cloud, vae_status],
                 )
             with gr.Tab("Image → camera-controlled video"):
                 with gr.Row():

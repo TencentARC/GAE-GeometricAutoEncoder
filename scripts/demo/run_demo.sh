@@ -197,7 +197,7 @@ run_recon() {
   shopt -s nullglob
   local videos=(examples/recon_videos/*.mp4)
   [[ ${#videos[@]} -gt 0 ]] || die "no examples/recon_videos/*.mp4"
-  echo "[run_demo] VAE reconstruction: ${#videos[@]} scene video(s), GAE-${SIZE}"
+  echo "[run_demo] VAE reconstruction (RGB + depth + PLY): ${#videos[@]} scene video(s), GAE-${SIZE}"
   local video name
   for video in "${videos[@]}"; do
     name="$(basename "$video" .mp4)"
