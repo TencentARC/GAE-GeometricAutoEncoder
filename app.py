@@ -71,6 +71,16 @@ I2V_EXAMPLES = _scene_examples()
 T2I_EXAMPLES = _t2i_examples()
 
 
+def _vae_video_examples() -> list[list[str]]:
+    path = ROOT / "examples" / "recon_videos"
+    names = ("artgrid_000_rgb.mp4", "dl3dv_000_rgb.mp4", "mvs_000_rgb.mp4",
+             "scannet_000_rgb.mp4", "re10k_000_rgb.mp4", "spatialvid_000_rgb.mp4")
+    return [[str(path / name)] for name in names if (path / name).is_file()]
+
+
+VAE_VIDEO_EXAMPLES = _vae_video_examples()
+
+
 def _duration_i2v(_image=None, _prompt="", _trajectory="wander", views: int = 17, steps: int = 25, *_args, **_kwargs) -> int:
     # This is a reservation hint for ZeroGPU; dedicated GPU Spaces can run longer.
     return min(900, max(120, int(90 + int(views) * int(steps) * 0.35)))
@@ -274,15 +284,15 @@ def reconstruct_vae(image: str | None):
     command = [
         sys.executable,
         str(ROOT / "scripts" / "demo" / "reconstruct_vae.py"),
-        "--image", str(image),
+        "--video", str(image),
         "--hf-repo", HF_REPO,
         "--cache-dir", str(CKPT_DIR),
         "--output", str(run_dir),
     ]
     _, elapsed = _run(command, run_dir, timeout=1800)
     stem_dir = run_dir / Path(image).stem
-    rgb = stem_dir / "rgb_recon.png"
-    depth = stem_dir / "depth_recon.png"
+    rgb = stem_dir / "rgb_recon.mp4"
+    depth = stem_dir / "depth_recon.mp4"
     if not rgb.is_file():
         raise gr.Error("VAE reconstruction completed but no RGB output was produced.")
     return str(rgb), str(depth) if depth.is_file() else None, (
@@ -389,15 +399,21 @@ from this repository's `examples/` directory and use the released
                 )
                 with gr.Row():
                     with gr.Column(scale=1):
-                        vae_image = gr.Image(
-                            label="Input image", type="filepath",
-                            sources=["upload", "clipboard"], height=300,
+                        vae_image = gr.Video(
+                            label="Input RGB video", type="filepath", height=300,
                         )
                         vae_run = gr.Button("Reconstruct with VAE", variant="primary")
                     with gr.Column(scale=1):
-                        vae_rgb = gr.Image(label="Reconstructed RGB", height=300)
-                        vae_depth = gr.Image(label="Reconstructed depth", height=300)
+                        vae_rgb = gr.Video(label="Reconstructed RGB video", autoplay=True, loop=True, height=300)
+                        vae_depth = gr.Video(label="Reconstructed depth video", autoplay=True, loop=True, height=300)
                 vae_status = gr.Markdown()
+                if VAE_VIDEO_EXAMPLES:
+                    gr.Examples(
+                        examples=VAE_VIDEO_EXAMPLES,
+                        inputs=[vae_image],
+                        label="VAE reconstruction examples",
+                        examples_per_page=6,
+                    )
                 vae_run.click(
                     reconstruct_vae,
                     inputs=[vae_image],
