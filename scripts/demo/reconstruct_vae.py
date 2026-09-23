@@ -86,9 +86,15 @@ def main() -> None:
         if depth is not None:
             if depth.ndim == 5 and depth.shape[0] == 1:
                 depth = depth[0]
-            if depth.ndim == 3:
-                depth = depth.unsqueeze(1)
-            if depth.ndim != 4:
+            # The released pipeline currently returns [1,V,H,W], while
+            # compatible backbones may return [V,1,H,W] or [V,H,W].
+            if depth.ndim == 4 and depth.shape[0] == 1:
+                depth = depth[0]
+            if depth.ndim == 4 and depth.shape[1] == 1:
+                depth = depth[:, 0]
+            if depth.ndim == 2:
+                depth = depth.unsqueeze(0)
+            if depth.ndim != 3:
                 raise RuntimeError(f"unexpected depth reconstruction shape: {tuple(depth.shape)}")
             depth_frames = []
             for frame in depth:
