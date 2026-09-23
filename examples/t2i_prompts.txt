@@ -1,13 +1,10 @@
 # Text-to-image demo prompts for scripts/demo/generate_t2i.py (one per line; '#' = comment).
-An antique French gilt-and-silver heart-shaped reliquary with ornate floral engraving, displayed on a wooden table under warm studio lighting.
-A charming anthropomorphic white-and-tan hamster wearing polished medieval plate armor, standing among vivid pink flowers.
-A detailed humanoid robot with reflective black-and-silver armor and glowing green eyes, standing in a misty forest at sunset.
-A peaceful oil painting of a young boy seated beneath a sun-dappled tree with two small dogs in a meadow.
-A lone hiker stands on moss-covered boulders overlooking a calm forest lake in a dark, serene landscape.
-A comic-style illustration of a large, ferocious green-and-black bear walking through a dense forest.
-A warm Moroccan-inspired living room with a rust-red sofa, turquoise cushions, carved wooden table, patterned rug, and blue vase.
-A slice of lemon meringue pie decorated with piped cream, elegantly presented on a blue-and-white ceramic plate.
-A weathered metallic skull half-buried in snow, with glowing red eyes and a fiery orange energy core in its temple.
-A detailed close-up sculpture of Medusa, rendered in dark green stone with intricately coiled snakes surrounding her face.
-A futuristic android geisha with a metallic face, elaborate mechanical headdress, floral ornaments, and luminous purple-gold accents.
-A woman in dark cyberpunk clothing stands in neon-lit Times Square at night, surrounded by colorful signs and wet reflections.
+A Day of the Dead sugar-skull cup with blue eyes and a pink flower.
+A Bohemian bedroom with a wooden bed and red patterned textiles.
+Cross-country skiers on a snowy trail in a sunlit winter forest.
+A smiling fox wearing a top hat and a waistcoat in a cloudy sky.
+A serene bedroom with a white comforter and orange pillows.
+A painterly still life of fruit in an ornate blue bowl.
+A humanoid robot with reflective armor and glowing green eyes in a misty forest.
+A weathered metallic skull half-buried in snow, with glowing red eyes.
+A close-up sculpture of Medusa in dark stone with coiled snakes.
