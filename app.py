@@ -265,6 +265,32 @@ def generate_t2i(prompt: str, steps: int, cfg_scale: float, seed: int, pc_stride
     return str(image), str(depth) if depth else None, str(pointcloud) if pointcloud else None, status
 
 
+@spaces.GPU(duration=900)
+def reconstruct_vae(image: str | None):
+    """Run codec-only reconstruction and expose RGB/depth outputs in the app."""
+    if not image:
+        raise gr.Error("Upload an image first.")
+    run_dir = OUTPUT_ROOT / f"vae-recon-{uuid.uuid4().hex}"
+    command = [
+        sys.executable,
+        str(ROOT / "scripts" / "demo" / "reconstruct_vae.py"),
+        "--image", str(image),
+        "--hf-repo", HF_REPO,
+        "--cache-dir", str(CKPT_DIR),
+        "--output", str(run_dir),
+    ]
+    _, elapsed = _run(command, run_dir, timeout=1800)
+    stem_dir = run_dir / Path(image).stem
+    rgb = stem_dir / "rgb_recon.png"
+    depth = stem_dir / "depth_recon.png"
+    if not rgb.is_file():
+        raise gr.Error("VAE reconstruction completed but no RGB output was produced.")
+    return str(rgb), str(depth) if depth.is_file() else None, (
+        f"GAE-64 VAE reconstruction · {elapsed:.1f}s\n\n"
+        f"[Download the full run log](file={run_dir / 'space_run.log'})"
+    )
+
+
 CSS = """
 #gae-container { max-width: 1180px; margin: 0 auto; }
 """
@@ -355,6 +381,27 @@ from this repository's `examples/` directory and use the released
                     generate_t2i,
                     inputs=[t2i_prompt, t2i_steps, t2i_cfg, t2i_seed, t2i_stride],
                     outputs=[t2i_image, t2i_depth, t2i_cloud, t2i_status],
+                )
+            with gr.Tab("VAE reconstruction"):
+                gr.Markdown(
+                    "Encode an image with the GAE codec and decode it back to RGB "
+                    "and depth. This tab does not run Flow/DiT generation."
+                )
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        vae_image = gr.Image(
+                            label="Input image", type="filepath",
+                            sources=["upload", "clipboard"], height=300,
+                        )
+                        vae_run = gr.Button("Reconstruct with VAE", variant="primary")
+                    with gr.Column(scale=1):
+                        vae_rgb = gr.Image(label="Reconstructed RGB", height=300)
+                        vae_depth = gr.Image(label="Reconstructed depth", height=300)
+                vae_status = gr.Markdown()
+                vae_run.click(
+                    reconstruct_vae,
+                    inputs=[vae_image],
+                    outputs=[vae_rgb, vae_depth, vae_status],
                 )
         gr.Markdown(
             """
