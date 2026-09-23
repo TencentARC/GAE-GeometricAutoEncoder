@@ -2838,7 +2838,16 @@ def main():
     roll_cond_num = (
         args.roll_cond_num if args.roll_cond_num is not None else args.cond_num
     )
-    autoregress = T > V
+    # ``--free-rollout`` must run the synthetic camera path even when the
+    # requested clip fits in one denoising chunk (T == V).  The Space uses
+    # exactly that shape for 17/33/81-view presets; treating it as ordinary
+    # non-autoregressive inference leaves the identity poses from the manifest
+    # in place, making Wander/Orbit/Spiral/Drive appear frozen.
+    free_rollout_requested = bool(
+        os.environ.get("FREE_ROLLOUT")
+        and args.mode in ("recon", "generate")
+    )
+    autoregress = T > V or free_rollout_requested
 
     cond_num_range = None
     if args.cond_num_range:
@@ -2865,7 +2874,7 @@ def main():
             raise ValueError(
                 f"--cond-num ({cond_num}) must be < --num-views ({V})"
             )
-    if autoregress:
+    if autoregress and not free_rollout_requested:
         if T <= V:
             raise ValueError(
                 f"--total-views ({T}) must exceed --num-views ({V}) for rollout"
