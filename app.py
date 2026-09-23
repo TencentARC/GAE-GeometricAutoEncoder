@@ -147,13 +147,14 @@ def generate_i2v(
     # Bundled scene examples include matching camera poses. Uploaded images use
     # the same synthetic trajectories as the command-line demo.
     pose_file = Path(image).with_name(f"{Path(image).stem}_poses.npz")
-    # Gradio's uploaded file is usually copied to a temporary path, so first
-    # try the matching pose in the repository before falling back to the
-    # canonical example trajectory.
+    # Gradio's uploaded file is usually copied to a temporary path, so try the
+    # matching repository pose as a candidate. It is used only when the user
+    # explicitly selected the Example pose option; selecting Wander/Orbit/etc.
+    # must not silently fall back to that same pose.
     if not pose_file.is_file():
         repo_pose = ROOT / "examples" / "scenes" / f"{Path(image).stem}_poses.npz"
         pose_file = repo_pose if repo_pose.is_file() else pose_file
-    uses_bundled_poses = pose_file.is_file()
+    uses_bundled_poses = trajectory == "example" and pose_file.is_file()
     uses_example_poses = False
     if not uses_bundled_poses and trajectory == "example" and DEFAULT_EXAMPLE_POSES.is_file():
         pose_file = DEFAULT_EXAMPLE_POSES
