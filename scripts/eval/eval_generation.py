@@ -201,6 +201,8 @@ from stage2.transport.flow import (
 from stage2.models.camera import compute_plucker_6d_per_token
 from utils.model_utils import instantiate_from_config
 
+from scripts.demo.trajectory_utils import synthesize_free_trajectory
+
 from eval_data import (
     DATASET_ROOTS,
     DATASET_DEFAULT_INTERVAL,
@@ -1117,75 +1119,22 @@ def _synthesize_free_trajectory(
     fwd_sign: float = 1.0,
     seed: int = 0,
 ) -> list:
-    """Build an ``n``-length synthetic camera-to-world trajectory anchored at
-    ``anchor_c2w`` for unbounded ("free") rollout demos.
+    """Compatibility wrapper around the shared trajectory implementation.
 
-    Design (per demo spec): *varied* motion (not a monotonic dolly) and no
-    head-on "wall crash". The path is turn-dominant — heading (yaw) sweeps as a
-    sum of low harmonics while forward advance is small and speed-modulated (it
-    eases / nearly pauses), with gentle strafe + vertical bob + slight pitch for
-    cinematic variety. Each rollout chunk is re-normalised pose-origin-relative,
-    so only the RELATIVE inter-frame motion matters; ``speed``/``yaw_deg`` are
-    the main knobs (env: FREE_ROLLOUT_SPEED / _YAW_DEG / _PITCH_DEG / _FWD_SIGN).
-    'orbit' and 'spiral' are provided as alternates.
+    Synthetic paths are normalized by ``FREE_ROLLOUT_TARGET_PATH_LENGTH`` when
+    the public demo supplies an example pose file, so all motion choices use
+    the same metric scale as that example.
     """
-    rng = np.random.default_rng(seed)
-    A = np.asarray(anchor_c2w, dtype=np.float64).copy()
-    R0 = A[:3, :3]
-    p0 = A[:3, 3].copy()
-    ph = rng.uniform(0.0, 2.0 * np.pi, size=6)
-    yaw_a = np.deg2rad(yaw_deg)
-    pitch_a = np.deg2rad(pitch_deg)
-    w = (2.0 * np.pi) / max(n - 1, 1)          # 1 cycle over the whole clip
-    f = np.array([1.0, 2.3, 0.5]) * w          # a few low harmonics = smooth+varied
-    poses = []
-    pos = p0.copy()
-    for t in range(n):
-        if motion == "orbit":
-            yaw = yaw_a * 3.0 * (t / max(n - 1, 1))     # steady sweep
-            pitch = pitch_a * np.sin(f[2] * t + ph[2])
-            spd = 0.0                                    # pure rotation (radius via strafe)
-            strafe = speed
-            bob = 0.0
-        elif motion == "spiral":
-            yaw = yaw_a * 2.0 * (t / max(n - 1, 1))
-            pitch = pitch_a * np.sin(f[2] * t + ph[2])
-            spd = speed * 0.5
-            strafe = speed * 0.5
-            bob = speed * 0.2 * np.sin(f[2] * t + ph[5])
-        elif motion == "drive":
-            # forward/backward + turning ONLY: no vertical bob, no pitch tilt,
-            # no lateral strafe. yaw sweeps (varied, sum of low harmonics) and
-            # the signed advance eases through 0 so the camera goes forward then
-            # backward without ever craning up/down.
-            yaw = yaw_a * (0.6 * np.sin(f[0] * t + ph[0])
-                           + 0.4 * np.sin(f[1] * t + ph[1]))
-            pitch = 0.0
-            spd = speed * np.sin(f[1] * t + ph[3])   # signed: forward & back
-            strafe = 0.0
-            bob = 0.0
-        else:  # "wander" (default): varied, turn-dominant, no charging
-            yaw = yaw_a * (0.6 * np.sin(f[0] * t + ph[0])
-                           + 0.4 * np.sin(f[1] * t + ph[1]))
-            pitch = pitch_a * np.sin(f[2] * t + ph[2])
-            spd = speed * (0.5 + 0.5 * np.sin(f[1] * t + ph[3]))   # ease / pause
-            strafe = speed * 0.6 * np.sin(f[0] * t + ph[4])
-            bob = speed * 0.25 * np.sin(2.0 * f[2] * t + ph[5])
-        cy, sy = np.cos(yaw), np.sin(yaw)
-        cp, sp = np.cos(pitch), np.sin(pitch)
-        Ry = np.array([[cy, 0.0, sy], [0.0, 1.0, 0.0], [-sy, 0.0, cy]])
-        Rx = np.array([[1.0, 0.0, 0.0], [0.0, cp, -sp], [0.0, sp, cp]])
-        R = R0 @ (Ry @ Rx)
-        fwd = fwd_sign * (-R[:, 2])            # camera looks down local -Z (OpenGL)
-        right = R[:, 0]
-        up = R[:, 1]
-        pos = pos + spd * fwd + strafe * right + bob * up
-        c2w = np.eye(4, dtype=np.float64)
-        c2w[:3, :3] = R
-        c2w[:3, 3] = pos
-        poses.append(c2w)
-    return poses
-
+    target_raw = os.environ.get("FREE_ROLLOUT_TARGET_PATH_LENGTH", "")
+    try:
+        target = float(target_raw) if target_raw else None
+    except ValueError:
+        target = None
+    return synthesize_free_trajectory(
+        anchor_c2w, n, motion=motion, speed=speed, yaw_deg=yaw_deg,
+        pitch_deg=pitch_deg, fwd_sign=fwd_sign, seed=seed,
+        target_path_length=target,
+    )
 
 def _save_mp4(frames_rgb: list, path: str, fps: int = 4):
     """Save uint8 RGB frames as H.264 mp4 via ffmpeg pipe (S3-FUSE safe)."""

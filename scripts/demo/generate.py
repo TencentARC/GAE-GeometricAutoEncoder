@@ -27,6 +27,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
+from scripts.demo.trajectory_utils import load_reference_poses, path_length
 
 
 def parse_args() -> tuple[argparse.Namespace, list[str]]:
@@ -66,6 +67,10 @@ def parse_args() -> tuple[argparse.Namespace, list[str]]:
     parser.add_argument("--trajectory", choices=("wander", "orbit", "spiral", "drive"),
                         default="wander")
     parser.add_argument("--speed", type=float, default=0.06)
+    parser.add_argument(
+        "--trajectory-reference-poses", type=Path, default=None,
+        help="Pose NPZ whose prefix path length defines the scale of synthetic trajectories.",
+    )
     parser.add_argument("--sample-steps", type=int, default=50)
     parser.add_argument("--cfg-scale", type=float, default=2.0)
     parser.add_argument("--seed", type=int, default=42)
@@ -109,6 +114,22 @@ def _resolve_poses_path(args: argparse.Namespace) -> Path | None:
         return args.poses
     sibling = args.image.with_name(f"{args.image.stem}_poses.npz")
     return sibling if sibling.is_file() else None
+
+
+def _resolve_trajectory_reference_path(args: argparse.Namespace) -> Path | None:
+    """Find the example pose path used to metric-normalize free rollouts."""
+    candidates = []
+    if args.trajectory_reference_poses is not None:
+        candidates.append(args.trajectory_reference_poses)
+    candidates.append(args.image.with_name(f"{args.image.stem}_poses.npz"))
+    candidates.append(ROOT / "examples" / "scenes" / f"{args.image.stem}_poses.npz")
+    # Uploaded images have no sibling pose file; use the shipped canonical
+    # example path so all trajectory choices retain repository-scale motion.
+    candidates.append(ROOT / "examples" / "scenes" / "forest_lake_trail_poses.npz")
+    for path in candidates:
+        if path is not None and path.is_file():
+            return path
+    return None
 
 
 def _load_gt_cameras(path: Path, n: int) -> tuple[np.ndarray, np.ndarray, int | None]:
@@ -218,6 +239,9 @@ def main() -> int:
     args.output.mkdir(parents=True, exist_ok=True)
     poses_path = _resolve_poses_path(args)
     manifest = _prepare_scene(args, poses_path)
+    trajectory_reference_path = (
+        _resolve_trajectory_reference_path(args) if poses_path is None else None
+    )
     env = os.environ.copy()
     env["PYTHONPATH"] = f"{ROOT / 'src'}:{ROOT / 'scripts' / 'eval'}:{env.get('PYTHONPATH', '')}"
     env.pop("FREE_ROLLOUT", None)
@@ -228,6 +252,20 @@ def main() -> int:
             "FREE_ROLLOUT_MOTION": args.trajectory,
             "FREE_ROLLOUT_SPEED": str(args.speed),
         })
+        if trajectory_reference_path is not None:
+            try:
+                ref = load_reference_poses(trajectory_reference_path, args.total_views)
+                target = path_length(ref)
+            except (OSError, ValueError) as exc:
+                print(f"[generate] warning: cannot read trajectory reference {trajectory_reference_path}: {exc}", flush=True)
+                target = 0.0
+            if target > 0.0:
+                env["FREE_ROLLOUT_TARGET_PATH_LENGTH"] = str(target)
+                print(
+                    f"[generate] synthetic trajectory scale: {target:.4f}m "
+                    f"from {trajectory_reference_path} ({len(ref)} views)",
+                    flush=True,
+                )
     command = [
         sys.executable, str(ROOT / "scripts/eval/eval_generation.py"),
         "--dit-ckpt", str(args.flow_ckpt),
