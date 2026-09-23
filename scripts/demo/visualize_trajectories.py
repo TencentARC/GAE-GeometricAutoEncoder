@@ -18,7 +18,7 @@ import numpy as np
 # implementation from the evaluator.
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from scripts.demo.trajectory_utils import synthesize_free_trajectory, path_length
+from scripts.demo.trajectory_utils import synthesize_free_trajectory, path_length, trajectory_extent
 
 
 def _plot_paths(paths: dict[str, np.ndarray], output: Path, title: str) -> None:
@@ -36,6 +36,15 @@ def _plot_paths(paths: dict[str, np.ndarray], output: Path, title: str) -> None:
     }
     fig, axes = plt.subplots(2, 3, figsize=(17, 10), constrained_layout=True)
     axes = axes.ravel()
+    all_pos = np.concatenate([pose[:, :3, 3] for pose in paths.values()], axis=0)
+    def _limits(values: np.ndarray, frac: float = 0.08) -> tuple[float, float]:
+        lo, hi = float(values.min()), float(values.max())
+        span = max(hi - lo, 1e-3)
+        pad = span * frac
+        return lo - pad, hi + pad
+    top_xlim = _limits(all_pos[:, 0])
+    top_ylim = _limits(all_pos[:, 2])
+    side_ylim = _limits(all_pos[:, 1])
     for ax, (name, pose) in zip(axes, paths.items()):
         pos = pose[:, :3, 3]
         # World coordinates: x horizontal, z forward/depth, y vertical.
@@ -54,6 +63,8 @@ def _plot_paths(paths: dict[str, np.ndarray], output: Path, title: str) -> None:
         ax.set_ylabel("world z (depth)")
         ax.grid(alpha=0.25)
         ax.set_aspect("equal", adjustable="box")
+        ax.set_xlim(*top_xlim)
+        ax.set_ylim(*top_ylim)
         ax.legend(loc="best", fontsize=8)
 
     # One panel is deliberately reserved for the side view.  It makes the
@@ -67,6 +78,8 @@ def _plot_paths(paths: dict[str, np.ndarray], output: Path, title: str) -> None:
     ax.set_title("Side view (world x / y)")
     ax.set_xlabel("world x")
     ax.set_ylabel("world y (up)")
+    ax.set_xlim(*top_xlim)
+    ax.set_ylim(*side_ylim)
     ax.grid(alpha=0.25)
     ax.legend(fontsize=8)
     fig.suptitle(title, fontsize=16)
@@ -103,7 +116,7 @@ def main() -> None:
                          ("Spiral", "spiral"), ("Drive", "drive")):
         paths[name] = np.asarray(synthesize_free_trajectory(
             anchor, n, motion=motion, speed=args.speed,
-            yaw_deg=args.yaw_deg, pitch_deg=args.pitch_deg, seed=args.seed, target_path_length=path_length(gt[:n])))
+            yaw_deg=args.yaw_deg, pitch_deg=args.pitch_deg, seed=args.seed, target_extent=trajectory_extent(gt[:n])))
 
     for name, pose in paths.items():
         pos = pose[:, :3, 3]

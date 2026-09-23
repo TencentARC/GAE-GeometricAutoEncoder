@@ -27,7 +27,7 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from scripts.demo.trajectory_utils import load_reference_poses, path_length
+from scripts.demo.trajectory_utils import load_reference_poses, trajectory_extent
 
 
 def parse_args() -> tuple[argparse.Namespace, list[str]]:
@@ -255,14 +255,14 @@ def main() -> int:
         if trajectory_reference_path is not None:
             try:
                 ref = load_reference_poses(trajectory_reference_path, args.total_views)
-                target = path_length(ref)
+                target = trajectory_extent(ref)
             except (OSError, ValueError) as exc:
                 print(f"[generate] warning: cannot read trajectory reference {trajectory_reference_path}: {exc}", flush=True)
                 target = 0.0
             if target > 0.0:
-                env["FREE_ROLLOUT_TARGET_PATH_LENGTH"] = str(target)
+                env["FREE_ROLLOUT_TARGET_EXTENT"] = str(target)
                 print(
-                    f"[generate] synthetic trajectory scale: {target:.4f}m "
+                    f"[generate] synthetic trajectory diameter: {target:.4f}m "
                     f"from {trajectory_reference_path} ({len(ref)} views)",
                     flush=True,
                 )

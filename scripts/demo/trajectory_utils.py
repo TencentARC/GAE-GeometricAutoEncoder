@@ -12,6 +12,17 @@ def path_length(poses: np.ndarray) -> float:
     return float(np.linalg.norm(np.diff(pos, axis=0), axis=1).sum())
 
 
+def trajectory_extent(poses: np.ndarray) -> float:
+    """Spatial diameter of camera centers, used as the metric pose scale."""
+    pos = np.asarray(poses, dtype=np.float64)[:, :3, 3]
+    if len(pos) < 2:
+        return 0.0
+    # N is at most 81 for the public demo; the exact diameter is more robust
+    # than path length for comparing straight, orbiting, and wandering paths.
+    distances = pos[:, None, :] - pos[None, :, :]
+    return float(np.linalg.norm(distances, axis=-1).max())
+
+
 def load_reference_poses(path: str | Path, n: int) -> np.ndarray:
     data = np.load(path)
     if "c2w" not in data:
@@ -35,12 +46,14 @@ def synthesize_free_trajectory(
     fwd_sign: float = 1.0,
     seed: int = 0,
     target_path_length: float | None = None,
+    target_extent: float | None = None,
 ) -> list[np.ndarray]:
     """Generate a smooth path and optionally match a reference path length.
 
-    ``target_path_length`` is measured from the selected example pose prefix,
-    so 17/33/81-view synthetic paths have the same metric scale as the exact
-    repository example at the same view count. Drive uses a positive speed
+    ``target_extent`` is the spatial diameter of the selected example pose
+    prefix, so 17/33/81-view synthetic paths have the same metric scene scale
+    as the exact repository example at the same view count.
+    ``target_path_length`` is retained for backwards compatibility. Drive uses a positive speed
     envelope and therefore never reverses its forward motion.
     """
     if n < 1:
@@ -92,10 +105,11 @@ def synthesize_free_trajectory(
         c2w[:3, :3], c2w[:3, 3] = R, pos
         poses.append(c2w)
 
-    if target_path_length is not None and target_path_length > 0.0:
-        actual = path_length(np.asarray(poses))
+    target = target_extent if target_extent is not None else target_path_length
+    if target is not None and target > 0.0:
+        actual = trajectory_extent(np.asarray(poses))
         if actual > 1e-9:
-            scale = float(target_path_length) / actual
+            scale = float(target) / actual
             origin = poses[0][:3, 3].copy()
             for pose in poses:
                 pose[:3, 3] = origin + (pose[:3, 3] - origin) * scale
@@ -111,7 +125,7 @@ def trajectory_for_preview(
         return ref
     return np.asarray(synthesize_free_trajectory(
         ref[0], len(ref), motion=motion, speed=speed, seed=seed,
-        target_path_length=path_length(ref)))
+        target_extent=trajectory_extent(ref)))
 
 
 def render_trajectory_preview(poses: np.ndarray, output: str | Path, title: str) -> None:

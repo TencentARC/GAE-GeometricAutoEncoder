@@ -1125,7 +1125,7 @@ def _synthesize_free_trajectory(
     the public demo supplies an example pose file, so all motion choices use
     the same metric scale as that example.
     """
-    target_raw = os.environ.get("FREE_ROLLOUT_TARGET_PATH_LENGTH", "")
+    target_raw = os.environ.get("FREE_ROLLOUT_TARGET_EXTENT", os.environ.get("FREE_ROLLOUT_TARGET_PATH_LENGTH", ""))
     try:
         target = float(target_raw) if target_raw else None
     except ValueError:
@@ -1133,7 +1133,7 @@ def _synthesize_free_trajectory(
     return synthesize_free_trajectory(
         anchor_c2w, n, motion=motion, speed=speed, yaw_deg=yaw_deg,
         pitch_deg=pitch_deg, fwd_sign=fwd_sign, seed=seed,
-        target_path_length=target,
+        target_extent=target,
     )
 
 def _save_mp4(frames_rgb: list, path: str, fps: int = 4):
