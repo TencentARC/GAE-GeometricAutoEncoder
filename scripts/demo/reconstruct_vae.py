@@ -67,7 +67,16 @@ def main() -> None:
             out = model.reconstruct(tensor)
         out_dir = args.output / input_path.stem
         out_dir.mkdir(parents=True, exist_ok=True)
-        rgb = out["rgb"][0].float().cpu().clamp(0, 1)
+        # ``GAE.reconstruct`` returns [V, 3, H, W] for a single batch. Keep
+        # the view dimension for videos while accepting a batched [1,V,...]
+        # output from compatible backbones.
+        rgb = out["rgb"].float().cpu().clamp(0, 1)
+        if rgb.ndim == 5 and rgb.shape[0] == 1:
+            rgb = rgb[0]
+        if rgb.ndim == 3:
+            rgb = rgb.unsqueeze(0)
+        if rgb.ndim != 4:
+            raise RuntimeError(f"unexpected RGB reconstruction shape: {tuple(rgb.shape)}")
         rgb_frames = (rgb.permute(0, 2, 3, 1).numpy() * 255.0 + 0.5).astype(np.uint8)
         if len(rgb_frames) == 1:
             Image.fromarray(rgb_frames[0]).save(out_dir / "rgb_recon.png")
@@ -75,8 +84,14 @@ def main() -> None:
             _save_video(rgb_frames, out_dir / "rgb_recon.mp4", fps)
         depth = out.get("depth")
         if depth is not None:
+            if depth.ndim == 5 and depth.shape[0] == 1:
+                depth = depth[0]
+            if depth.ndim == 3:
+                depth = depth.unsqueeze(1)
+            if depth.ndim != 4:
+                raise RuntimeError(f"unexpected depth reconstruction shape: {tuple(depth.shape)}")
             depth_frames = []
-            for frame in depth[0]:
+            for frame in depth:
                 arr = frame.detach().float().cpu().squeeze().numpy()
                 lo, hi = np.nanpercentile(arr, [1.0, 99.0])
                 vis = np.clip((arr - lo) / max(hi - lo, 1e-6), 0.0, 1.0)
