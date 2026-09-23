@@ -209,7 +209,7 @@ This repository includes a Gradio Space app in [`app.py`](app.py). It has three 
 
 - **Image → camera-controlled video**: uses the images, prompts, and matching camera poses in `examples/scenes/`; example scenes use their default pose path, with synthetic trajectories available as alternatives.
 - The I2V Space displays the generated RGB video and the decoded depth visualization video side by side; the final depth frame is also available as a PNG.
-- The camera-trajectory selector shows a pose preview for the selected input and view count. Synthetic paths are explicit forward, backward, gentle-left-turn, and gentle-right-turn motions, with translation scale matched to the selected example pose.
+- The camera-trajectory selector currently exposes only the default camera poses; additional synthetic motions remain under evaluation before being added to the app.
 - **Text → image**: uses the prompts in `examples/t2i_prompts.txt` and decodes depth plus a point cloud alongside the generated image.
 - **VAE Reconstruction (Codec)**: reconstructs the named videos in
   `examples/recon_videos/`, displays RGB plus viridis-colored depth videos, and
@@ -226,8 +226,9 @@ This repository includes a Gradio Space app in [`app.py`](app.py). It has three 
 For uploaded images, the default camera option uses the shipped
 `forest_lake_trail_poses.npz` example path (and its metric translation scale).
 Repository scene examples automatically use their matching `*_poses.npz` file.
-The synthetic forward/backward/turn-left/turn-right paths remain available as
-explicit alternatives.
+The command-line trajectory implementation also contains experimental
+forward/backward/turn-left/turn-right paths, but they are intentionally hidden
+from the app until their visual quality is finalized.
 
 To deploy it, create a new Gradio Space and upload/push this repository. The Space downloads `TencentARC/GAE-D64-1B` on the first request. A GPU-backed Space is recommended; start with 17 views and 25 sampling steps, then increase to 81 views for the full camera-controlled clip.
 
