@@ -905,20 +905,51 @@ def tensor_to_numpy_img(t):
     return (t.clamp(0, 1).cpu().permute(1, 2, 0).numpy() * 255).astype(np.uint8)
 
 
-def depth_to_numpy_img(d):
+def depth_to_numpy_img(d, dmin=None, dmax=None):
+    """Colorize one depth frame with an optional shared normalization range.
+
+    ``dmin``/``dmax`` are used by video writers so every frame in a clip is
+    rendered with the same global range.  When omitted, the historical
+    single-frame min/max behavior is retained for standalone previews.
+    """
     import matplotlib.cm as cm
     if d.ndim == 4:
         d = d[0]
     if d.ndim == 3 and d.shape[0] == 1:
         d = d[0]
     d = d.float().cpu()
-    dmin, dmax = d.min(), d.max()
-    if dmax - dmin > 1e-6:
-        d = (d - dmin) / (dmax - dmin)
+    finite = torch.isfinite(d)
+    if dmin is None or dmax is None:
+        if finite.any():
+            dmin = float(d[finite].min())
+            dmax = float(d[finite].max())
+        else:
+            dmin = dmax = 0.0
+    if float(dmax) - float(dmin) > 1e-6:
+        d = (d - float(dmin)) / (float(dmax) - float(dmin))
     else:
         d = torch.zeros_like(d)
+    d = torch.nan_to_num(d, nan=0.0, posinf=1.0, neginf=0.0)
     colored = cm.viridis(d.numpy())[:, :, :3]
     return (colored * 255).astype(np.uint8)
+
+
+def depth_to_numpy_video(depths):
+    """Colorize a depth clip using one global finite min/max across all frames."""
+    d = torch.as_tensor(depths).float().cpu()
+    while d.ndim > 3 and d.shape[0] == 1:
+        d = d[0]
+    if d.ndim == 4 and d.shape[1] == 1:
+        d = d[:, 0]
+    if d.ndim != 3:
+        raise ValueError(f"expected depth clip [V,H,W] or [V,1,H,W], got {tuple(d.shape)}")
+    finite = torch.isfinite(d)
+    if finite.any():
+        dmin = float(d[finite].min())
+        dmax = float(d[finite].max())
+    else:
+        dmin = dmax = 0.0
+    return [depth_to_numpy_img(frame, dmin, dmax) for frame in d]
 
 
 def compute_metrics(gt, pred):

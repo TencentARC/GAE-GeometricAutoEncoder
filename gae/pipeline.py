@@ -487,7 +487,7 @@ class GAE(nn.Module):
         scripts_dir = str(_REPO_ROOT / "scripts")
         if scripts_dir not in sys.path:
             sys.path.insert(0, scripts_dir)
-        from eval_data import depth_to_numpy_img
+        from eval_data import depth_to_numpy_img, depth_to_numpy_video
         from eval_generation import _scene_pointcloud_from_dpt, save_pointcloud_ply
 
         out_dir = Path(out_dir)
@@ -507,10 +507,11 @@ class GAE(nn.Module):
         depth = outputs.get("depth")
         if depth is not None:
             dep_path = out_dir / f"{stem}_depth.png"
-            Image.fromarray(depth_to_numpy_img(depth[0])).save(dep_path)
+            depth_frames = depth_to_numpy_video(depth[:v])
+            Image.fromarray(depth_frames[0]).save(dep_path)
             written["depth"] = str(dep_path)
             if v > 1:
-                rows = [depth_to_numpy_img(depth[i]) for i in range(v)]
+                rows = depth_frames
                 strip = np.concatenate(rows, axis=1)
                 strip_path = out_dir / f"{stem}_depth_strip.png"
                 Image.fromarray(strip).save(strip_path)

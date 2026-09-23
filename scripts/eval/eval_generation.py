@@ -213,7 +213,7 @@ from eval_data import (
     clear_scannetpp_frame_cache,
     prefetch_scannetpp_frames,
     tensor_to_numpy_img,
-    depth_to_numpy_img,
+    depth_to_numpy_video,
     compute_metrics,
     visualize_trajectory,
     raw_no_cls_to_dpt_input,
@@ -4475,7 +4475,9 @@ def main():
                             raise ValueError(
                                 "DA3-direct depth view count mismatch: "
                                 f"got {tuple(_dep.shape)}, expected {actual_v} views")
-                        rows = [depth_to_numpy_img(_dep_views[vi]) for vi in range(actual_v)]
+                        # Use one depth range for the entire clip; per-frame
+                        # normalization causes visible color flicker.
+                        rows = depth_to_numpy_video(_dep_views)
                         Image.fromarray(np.concatenate(rows, axis=0)).save(
                             os.path.join(ds_out_dir, f"{s_idx:03d}_depth.png"))
                         _save_mp4(
@@ -4630,17 +4632,20 @@ def main():
                             print(f"    [WARN] Ref–tgt PC gap failed: {e}")
 
                     if save_artifacts:
+                        gen_depth_frames = depth_to_numpy_video(gen_depth)
+                        gt_depth_frames = (
+                            depth_to_numpy_video(gt_depth) if gt_depth is not None else None
+                        )
                         rows = []
                         for vi in range(actual_v):
-                            row = [depth_to_numpy_img(gen_depth[vi])]
-                            if gt_depth is not None:
-                                row.insert(0, depth_to_numpy_img(gt_depth[vi]))
+                            row = [gen_depth_frames[vi]]
+                            if gt_depth_frames is not None:
+                                row.insert(0, gt_depth_frames[vi])
                             rows.append(np.concatenate(row, axis=1))
                         Image.fromarray(np.concatenate(rows, axis=0)).save(
                             os.path.join(ds_out_dir, f"{s_idx:03d}_depth.png"))
                         _save_mp4(
-                            [depth_to_numpy_img(gen_depth[vi])
-                             for vi in range(actual_v)],
+                            gen_depth_frames,
                             os.path.join(ds_out_dir, f"{s_idx:03d}_depth.mp4"),
                             fps=args.video_fps,
                         )
