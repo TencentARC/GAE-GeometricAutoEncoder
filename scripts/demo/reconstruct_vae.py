@@ -12,7 +12,11 @@ import imageio.v3 as iio
 from gae import GAE
 
 
-def _depth_to_color(depth: torch.Tensor) -> np.ndarray:
+def _depth_to_color(
+    depth: torch.Tensor,
+    lo: float | None = None,
+    hi: float | None = None,
+) -> np.ndarray:
     """Render depth with the project's viridis visualization convention."""
     import matplotlib.cm as cm
 
@@ -20,7 +24,8 @@ def _depth_to_color(depth: torch.Tensor) -> np.ndarray:
     finite = np.isfinite(arr)
     if not finite.any():
         return np.zeros((*arr.shape, 3), dtype=np.uint8)
-    lo, hi = float(arr[finite].min()), float(arr[finite].max())
+    if lo is None or hi is None:
+        lo, hi = float(arr[finite].min()), float(arr[finite].max())
     if hi - lo > 1e-6:
         norm = (arr - lo) / (hi - lo)
     else:
@@ -107,9 +112,16 @@ def main() -> None:
                 depth = depth.unsqueeze(0)
             if depth.ndim != 3:
                 raise RuntimeError(f"unexpected depth reconstruction shape: {tuple(depth.shape)}")
+            depth_cpu = depth.detach().float().cpu()
+            finite = torch.isfinite(depth_cpu)
+            if finite.any():
+                video_lo = float(depth_cpu[finite].min())
+                video_hi = float(depth_cpu[finite].max())
+            else:
+                video_lo = video_hi = 0.0
             depth_frames = []
-            for frame in depth:
-                depth_frames.append(_depth_to_color(frame))
+            for frame in depth_cpu:
+                depth_frames.append(_depth_to_color(frame, video_lo, video_hi))
             if len(depth_frames) == 1:
                 Image.fromarray(depth_frames[0]).save(out_dir / "depth_recon.png")
             else:
