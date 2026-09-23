@@ -29,7 +29,10 @@ def reference_forward_sign(poses: np.ndarray) -> float:
     if len(poses) < 2:
         return 1.0
     delta = poses[-1, :3, 3] - poses[0, :3, 3]
-    view_forward = -poses[0, :3, 2]
+    # The ray builder uses camera +Z as the viewing direction
+    # (d_cam = [x, y, +1]).  Keep trajectory semantics in that same
+    # convention rather than the OpenGL -Z convention.
+    view_forward = poses[0, :3, 2]
     score = float(np.dot(delta, view_forward))
     return -1.0 if score < 0.0 else 1.0
 
@@ -93,14 +96,14 @@ def synthesize_free_trajectory(
         # Smoothstep removes the abrupt velocity change at the endpoints.
         ease = u * u * (3.0 - 2.0 * u)
         if motion in ("turn_left", "turn_right"):
-            # Positive camera-yaw is a left turn in the OpenCV convention.
-            yaw = (1.0 if motion == "turn_left" else -1.0) * np.deg2rad(12.0) * ease
+            # Camera rays use +Z forward and +X right.  With the Y-up
+            # rotation below, negative yaw turns the viewing direction left.
+            yaw = (-1.0 if motion == "turn_left" else 1.0) * np.deg2rad(12.0) * ease
             pitch = np.deg2rad(2.0) * np.sin(np.pi * u)
             spd, strafe, bob = 0.0, 0.0, 0.0
         else:
             yaw = np.deg2rad(1.5) * np.sin(np.pi * u)
             pitch = np.deg2rad(1.0) * np.sin(np.pi * u)
-            travel_sign = 1.0 if motion == "forward" else -1.0
             # The sign is applied once below to the local forward vector.
             spd = speed * (0.75 + 0.25 * np.sin(np.pi * u))
             strafe = bob = 0.0
@@ -110,7 +113,7 @@ def synthesize_free_trajectory(
         Rx = np.array([[1.0, 0.0, 0.0], [0.0, cp, -sp], [0.0, sp, cp]])
         R = R0 @ (Ry @ Rx)
         if motion in ("forward", "backward"):
-            fwd = (1.0 if motion == "forward" else -1.0) * (-R[:, 2])
+            fwd = (1.0 if motion == "forward" else -1.0) * R[:, 2]
         else:
             fwd = np.zeros(3, dtype=np.float64)
         right, up = R[:, 0], R[:, 1]
