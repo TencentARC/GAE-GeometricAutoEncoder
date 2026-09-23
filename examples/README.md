@@ -52,7 +52,7 @@ python scripts/demo/generate_t2i.py \
   --prompts-file examples/t2i_prompts.txt --output results/t2i
 ```
 
-Eighteen demo captions covering still life, characters, landscape, interior, food, and sculpture scenes.
+Eighteen demo captions covering still life, characters, landscape, interior, food, and sculpture scenes. The T2I demo generates three images per caption by default; pass `--num-images N` to choose another count.
 
 ## `generate_min.py`
 

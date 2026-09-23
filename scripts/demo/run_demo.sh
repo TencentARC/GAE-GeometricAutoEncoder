@@ -15,6 +15,7 @@
 #   --skip-download       fail instead of fetching missing weights
 #   --guidance MODE       T2I: none|cfg|ig|cfg_ig (default: ig)
 #   --ig-scale N          T2I internal-guidance scale (default: 2.0)
+#   --num-images N        T2I images per prompt (default: 3)
 #   -h, --help
 #
 # Env: GAE_HF_REPO (default TencentARC/GAE-D64-1B), HF_TOKEN, PYTHON, GAE_VENV.
@@ -31,6 +32,7 @@ SKIP_INSTALL=0
 SKIP_DOWNLOAD=0
 T2I_GUIDANCE=ig
 T2I_IG_SCALE=2.0
+T2I_NUM_IMAGES=3
 EXTRA=()
 
 die() { echo "[run_demo] error: $*" >&2; exit 1; }
@@ -47,6 +49,7 @@ while [[ $# -gt 0 ]]; do
     --skip-download)  SKIP_DOWNLOAD=1; shift ;;
     --guidance)       T2I_GUIDANCE="$2"; shift 2 ;;
     --ig-scale)       T2I_IG_SCALE="$2"; shift 2 ;;
+    --num-images)     T2I_NUM_IMAGES="$2"; shift 2 ;;
     -h|--help)        usage 0 ;;
     --)               shift; EXTRA=("$@"); break ;;
     *)                die "unknown option '$1' (use --help)" ;;
@@ -54,6 +57,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ "$SIZE" == "64" || "$SIZE" == "128" ]] || die "--size must be 64 or 128"
+[[ "$T2I_NUM_IMAGES" =~ ^[1-9][0-9]*$ ]] || die "--num-images must be a positive integer"
 [[ "$TASK" == "i2v" || "$TASK" == "t2i" || "$TASK" == "all" ]] \
   || die "--task must be i2v, t2i, or all"
 
@@ -184,7 +188,8 @@ run_t2i() {
   echo "[run_demo] T2I: $prompts, GAE-${SIZE}"
   run python scripts/demo/generate_t2i.py \
     --config "$FLOW_CFG" --flow-ckpt "$FLOW_CKPT" --codec-ckpt "$CODEC_CKPT" \
-    --prompts-file "$prompts" --output "$OUT/t2i" --save-pointcloud \
+    --prompts-file "$prompts" --num-images "$T2I_NUM_IMAGES" \
+    --output "$OUT/t2i" --save-pointcloud \
     --guidance "$T2I_GUIDANCE" --ig-scale "$T2I_IG_SCALE"
 }
 

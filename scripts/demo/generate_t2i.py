@@ -96,7 +96,7 @@ def parse_args():
                    help="';;'-separated prompts (also accepts newlines).")
     p.add_argument("--prompts-file", type=Path, default=None,
                    help="One prompt per line ('#' comments allowed).")
-    p.add_argument("--num-images", type=int, default=1,
+    p.add_argument("--num-images", type=int, default=3,
                    help="Images per prompt (each with its own seed).")
     p.add_argument("--cfg-scale", type=float, default=2.0)
     p.add_argument("--guidance", choices=["none", "cfg", "ig", "cfg_ig"], default="ig",
