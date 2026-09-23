@@ -174,8 +174,8 @@ the `t2i` co-train branch). Guidance defaults to internal guidance (`--guidance 
 `--ig-scale 2`). By default each PNG is also paired with a DPT
 `_depth.png` and `_pointcloud.ply` (pass `--no-pointcloud` to skip). Pass
 `--prompts "a;;b"` or `--prompts-file` and
-`--num-images N` for batches. A curated prompt list plus sample outputs live in
-[`examples/t2i_prompts.txt`](examples/t2i_prompts.txt) and [`examples/t2i_samples/`](examples/t2i_samples).
+`--num-images N` for batches. A curated prompt list lives in
+[`examples/t2i_prompts.txt`](examples/t2i_prompts.txt).
 
 ---
 
