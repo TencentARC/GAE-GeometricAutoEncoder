@@ -229,6 +229,9 @@ Repository scene examples automatically use their matching `*_poses.npz` file.
 The command-line trajectory implementation also contains experimental
 forward/backward/turn-left/turn-right paths, but they are intentionally hidden
 from the app until their visual quality is finalized.
+These labels describe the camera motion in world space (the ray convention is
+camera +Z forward); apparent object motion inside the rendered image is
+naturally opposite to the moving camera.
 
 To deploy it, create a new Gradio Space and upload/push this repository. The Space downloads `TencentARC/GAE-D64-1B` on the first request. A GPU-backed Space is recommended; start with 17 views and 25 sampling steps, then increase to 81 views for the full camera-controlled clip.
 
