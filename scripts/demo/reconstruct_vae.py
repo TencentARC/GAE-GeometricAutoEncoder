@@ -113,7 +113,7 @@ def main() -> None:
             if len(depth_frames) == 1:
                 Image.fromarray(depth_frames[0]).save(out_dir / "depth_recon.png")
             else:
-                _save_video(np.stack(depth_frames)[..., None].repeat(3, axis=-1), out_dir / "depth_recon.mp4", fps)
+                _save_video(np.stack(depth_frames), out_dir / "depth_recon.mp4", fps)
         print(f"{input_path} -> {out_dir}")
 
 
