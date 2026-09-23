@@ -34,6 +34,10 @@ OUTPUT_ROOT = Path(os.environ.get("GAE_SPACE_OUTPUT_DIR", "/tmp/gae-space-result
 
 TRAJECTORIES = [
     ("Default camera poses", "example"),
+    ("Forward — smooth forward move", "forward"),
+    ("Backward — smooth backward move", "backward"),
+    ("Turn left — gentle smooth rotation", "turn_left"),
+    ("Turn right — gentle smooth rotation", "turn_right"),
 ]
 VIEW_CHOICES = [17, 33, 81]
 # Uploaded images do not have a sibling *_poses.npz.  Use a shipped, moving

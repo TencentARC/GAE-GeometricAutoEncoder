@@ -207,8 +207,9 @@ default 4-pixel stride (`--pc-stride` controls the density).
 
 This repository includes a Gradio Space app in [`app.py`](app.py). It has three tabs:
 
-- **Image → camera-controlled video**: uses the images, prompts, and matching default camera poses in `examples/scenes/`.
+- **Image → camera-controlled video**: uses the images, prompts, and matching camera poses in `examples/scenes/`; uploaded images can use the default path or the forward, backward, turn-left, and turn-right trajectories.
 - The I2V Space displays the generated RGB video and the decoded depth visualization video side by side; the final depth frame is also available as a PNG.
+- The camera-trajectory selector includes the default path plus forward, backward, turn-left, and turn-right motions, with a 3D pose preview.
 - **Text → image**: uses the prompts in `examples/t2i_prompts.txt` and decodes depth plus a point cloud alongside the generated image.
 - **VAE Reconstruction (Codec)**: reconstructs the named videos in
   `examples/recon_videos/`, displays RGB plus viridis-colored depth videos, and
@@ -225,6 +226,8 @@ This repository includes a Gradio Space app in [`app.py`](app.py). It has three 
 For uploaded images, the default camera option uses the shipped
 `forest_lake_trail_poses.npz` example path (and its metric translation scale).
 Repository scene examples automatically use their matching `*_poses.npz` file.
+Uploaded images can use the default path or a generated forward, backward,
+turn-left, or turn-right camera trajectory.
 
 To deploy it, create a new Gradio Space and upload/push this repository. The Space downloads `TencentARC/GAE-D64-1B` on the first request. A GPU-backed Space is recommended; start with 17 views and 25 sampling steps, then increase to 81 views for the full camera-controlled clip.
 
