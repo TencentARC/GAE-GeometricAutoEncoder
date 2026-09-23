@@ -67,18 +67,16 @@ def _plot_paths(paths: dict[str, np.ndarray], output: Path, title: str) -> None:
         ax.set_ylim(*top_ylim)
         ax.legend(loc="best", fontsize=8)
 
-    # One panel is deliberately reserved for the side view.  It makes the
-    # vertical component of Spiral and the lack of vertical motion in Drive
-    # immediately visible.
+    # Looking along world x shows vertical motion against forward depth z.
     ax = axes[-1]
     ax.clear()
     for name, pose in paths.items():
         pos = pose[:, :3, 3]
-        ax.plot(pos[:, 0], pos[:, 1], color=colors[name], lw=2.0, label=name)
-    ax.set_title("Side view (world x / y)")
-    ax.set_xlabel("world x")
+        ax.plot(pos[:, 2], pos[:, 1], color=colors[name], lw=2.0, label=name)
+    ax.set_title("Side view (world z / y)")
+    ax.set_xlabel("world z (depth)")
     ax.set_ylabel("world y (up)")
-    ax.set_xlim(*top_xlim)
+    ax.set_xlim(*top_ylim)
     ax.set_ylim(*side_ylim)
     ax.grid(alpha=0.25)
     ax.legend(fontsize=8)
