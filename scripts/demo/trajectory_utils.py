@@ -177,24 +177,40 @@ def render_trajectory_preview(poses: np.ndarray, output: str | Path, title: str)
     poses = np.asarray(poses, dtype=np.float64)
     pos = poses[:, :3, 3]
     fwd = -poses[:, :3, 2]
-    fig = plt.figure(figsize=(8, 7), constrained_layout=True)
+    fig = plt.figure(figsize=(8, 7))
+    fig.subplots_adjust(left=0.06, right=0.96, bottom=0.08, top=0.82)
     ax = fig.add_subplot(111, projection="3d")
-    ax.plot(pos[:, 0], pos[:, 2], pos[:, 1], color="#1a73e8", lw=2.4)
+    # Draw short segments with a time gradient so the direction is readable
+    # even when the trajectory folds back in depth.
+    colors = plt.cm.viridis(np.linspace(0.12, 0.92, max(len(pos) - 1, 1)))
+    for i in range(len(pos) - 1):
+        ax.plot(pos[i:i + 2, 0], pos[i:i + 2, 2], pos[i:i + 2, 1],
+                color=colors[i], lw=2.8, solid_capstyle="round")
     ax.scatter(*[pos[0, i] for i in (0, 2, 1)], c="#34a853", s=65, label="start")
     ax.scatter(*[pos[-1, i] for i in (0, 2, 1)], c="#ea4335", s=65, label="end")
-    stride = max(1, len(pos) // 12)
+    stride = max(1, len(pos) // 10)
     span = max(float(np.ptp(pos, axis=0).max()), 1e-3)
-    arrow = span * 0.12
+    arrow = span * 0.09
     for i in range(0, len(pos), stride):
         ax.quiver(pos[i, 0], pos[i, 2], pos[i, 1],
                   fwd[i, 0], fwd[i, 2], fwd[i, 1],
                   length=arrow, normalize=True, color="#e8710a", alpha=0.8,
                   arrow_length_ratio=0.25)
-    ax.set_xlabel("world x")
-    ax.set_ylabel("world z (depth)")
-    ax.set_zlabel("world y (up)")
-    ax.set_title(f"3D camera pose trajectory\n{title}")
+    ax.set_xlabel("world x", labelpad=8)
+    ax.set_ylabel("world z (depth)", labelpad=8)
+    ax.set_zlabel("world y (up)", labelpad=8)
+    ax.set_title(f"3D camera pose trajectory\n{title}", pad=14, fontsize=14)
     ax.legend(loc="best")
     ax.grid(alpha=0.25)
+    ax.view_init(elev=23, azim=-58)
+    span_xyz = np.ptp(pos, axis=0)
+    # Keep narrow lateral motion legible while retaining the true numeric axes.
+    # A literal aspect ratio would collapse x/y for the long forward examples.
+    visual_floor = max(float(span_xyz.max()) * 0.35, 1e-3)
+    ax.set_box_aspect(np.maximum(span_xyz[[0, 2, 1]], visual_floor))
+    ax.tick_params(axis="both", which="major", pad=1, labelsize=8)
+    ax.tick_params(axis="z", which="major", pad=1, labelsize=8)
+    for axis in (ax.xaxis, ax.yaxis, ax.zaxis):
+        axis.pane.set_facecolor((0.94, 0.96, 0.98, 0.7))
     fig.savefig(output, dpi=160)
     plt.close(fig)

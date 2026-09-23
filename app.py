@@ -318,6 +318,33 @@ from this repository's `examples/` directory and use the released
             """
         )
         with gr.Tabs():
+            with gr.Tab("VAE Reconstruction (Codec)"):
+                gr.Markdown(
+                    "Encode an RGB video with the GAE codec and decode it back to RGB "
+                    "and depth. This tab does not run Flow/DiT generation."
+                )
+                with gr.Row():
+                    with gr.Column(scale=1):
+                        vae_image = gr.Video(
+                            label="Input RGB video", height=300,
+                        )
+                        vae_run = gr.Button("Reconstruct with VAE", variant="primary")
+                    with gr.Column(scale=1):
+                        vae_rgb = gr.Video(label="Reconstructed RGB video", autoplay=True, loop=True, height=300)
+                        vae_depth = gr.Video(label="Reconstructed depth video", autoplay=True, loop=True, height=300)
+                vae_status = gr.Markdown()
+                if VAE_VIDEO_EXAMPLES:
+                    gr.Examples(
+                        examples=VAE_VIDEO_EXAMPLES,
+                        inputs=[vae_image],
+                        label="VAE reconstruction examples",
+                        examples_per_page=6,
+                    )
+                vae_run.click(
+                    reconstruct_vae,
+                    inputs=[vae_image],
+                    outputs=[vae_rgb, vae_depth, vae_status],
+                )
             with gr.Tab("Image → camera-controlled video"):
                 with gr.Row():
                     with gr.Column(scale=1):
@@ -391,33 +418,6 @@ from this repository's `examples/` directory and use the released
                     generate_t2i,
                     inputs=[t2i_prompt, t2i_steps, t2i_cfg, t2i_seed, t2i_stride],
                     outputs=[t2i_image, t2i_depth, t2i_cloud, t2i_status],
-                )
-            with gr.Tab("VAE reconstruction"):
-                gr.Markdown(
-                    "Encode an image with the GAE codec and decode it back to RGB "
-                    "and depth. This tab does not run Flow/DiT generation."
-                )
-                with gr.Row():
-                    with gr.Column(scale=1):
-                        vae_image = gr.Video(
-                            label="Input RGB video", height=300,
-                        )
-                        vae_run = gr.Button("Reconstruct with VAE", variant="primary")
-                    with gr.Column(scale=1):
-                        vae_rgb = gr.Video(label="Reconstructed RGB video", autoplay=True, loop=True, height=300)
-                        vae_depth = gr.Video(label="Reconstructed depth video", autoplay=True, loop=True, height=300)
-                vae_status = gr.Markdown()
-                if VAE_VIDEO_EXAMPLES:
-                    gr.Examples(
-                        examples=VAE_VIDEO_EXAMPLES,
-                        inputs=[vae_image],
-                        label="VAE reconstruction examples",
-                        examples_per_page=6,
-                    )
-                vae_run.click(
-                    reconstruct_vae,
-                    inputs=[vae_image],
-                    outputs=[vae_rgb, vae_depth, vae_status],
                 )
         gr.Markdown(
             """
