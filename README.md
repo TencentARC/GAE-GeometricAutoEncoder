@@ -191,8 +191,12 @@ To deploy it, create a new Gradio Space and upload/push this repository. The Spa
 The local equivalent is:
 
 ```bash
+pip install -e ".[space]"
 python app.py
 ```
+
+The core `pip install -e .` installation intentionally omits the optional
+Gradio web-app dependency.
 
 ## 🐍 Python API
 

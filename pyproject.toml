@@ -59,6 +59,9 @@ eval = [
 muon = ["gram-newton-schulz"]
 # Optional, for the OSP dataset loader and the BLIP3o webdataset path.
 data = ["orjson", "pyarrow", "webdataset", "s3torchconnector"]
+# Gradio UI in app.py. Kept optional so the core API/training install does not
+# pull web-app dependencies onto compute-only workers.
+space = ["gradio>=6.15.1,<7"]
 # Developer tools for linting and the CPU-only test suite (see CONTRIBUTING.md).
 dev = ["pytest", "ruff"]
 
