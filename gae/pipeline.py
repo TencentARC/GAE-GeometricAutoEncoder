@@ -487,7 +487,7 @@ class GAE(nn.Module):
         scripts_dir = str(_REPO_ROOT / "scripts")
         if scripts_dir not in sys.path:
             sys.path.insert(0, scripts_dir)
-        from eval_data import depth_to_numpy_img, depth_to_numpy_video
+        from eval_data import depth_to_numpy_video
         from eval_generation import _scene_pointcloud_from_dpt, save_pointcloud_ply
 
         out_dir = Path(out_dir)
