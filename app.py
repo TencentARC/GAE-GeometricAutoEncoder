@@ -33,7 +33,7 @@ CKPT_DIR = Path(os.environ.get("GAE_SPACE_CKPT_DIR", "/tmp/gae-space-ckpts"))
 OUTPUT_ROOT = Path(os.environ.get("GAE_SPACE_OUTPUT_DIR", "/tmp/gae-space-results"))
 
 TRAJECTORIES = [
-    ("Example camera poses — repository scale (recommended)", "example"),
+    ("Default camera poses", "example"),
     ("Forward — smooth forward move", "forward"),
     ("Backward — smooth backward move", "backward"),
     ("Turn left — gentle smooth rotation", "turn_left"),
