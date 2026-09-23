@@ -1,7 +1,6 @@
 # Text-to-image demo prompts for scripts/demo/generate_t2i.py (one per line; '#' = comment).
 A Day of the Dead sugar-skull cup with blue eyes and a pink flower.
 A Bohemian bedroom with a wooden bed and red patterned textiles.
-Cross-country skiers on a snowy trail in a sunlit winter forest.
 A smiling fox wearing a top hat and a waistcoat in a cloudy sky.
 A serene bedroom with a white comforter and orange pillows.
 A painterly still life of fruit in an ornate blue bowl.

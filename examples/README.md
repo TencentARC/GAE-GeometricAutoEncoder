@@ -52,7 +52,7 @@ python scripts/demo/generate_t2i.py \
   --prompts-file examples/t2i_prompts.txt --output results/t2i
 ```
 
-Nineteen demo captions covering still life, characters, landscape, interior, food, and sculpture scenes.
+Eighteen demo captions covering still life, characters, landscape, interior, food, and sculpture scenes.
 
 ## `generate_min.py`
 
