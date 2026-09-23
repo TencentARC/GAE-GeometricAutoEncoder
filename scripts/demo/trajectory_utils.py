@@ -47,6 +47,7 @@ def synthesize_free_trajectory(
     seed: int = 0,
     target_path_length: float | None = None,
     target_extent: float | None = None,
+    target_extents_xyz: np.ndarray | None = None,
 ) -> list[np.ndarray]:
     """Generate a smooth path and optionally match a reference path length.
 
@@ -105,14 +106,22 @@ def synthesize_free_trajectory(
         c2w[:3, :3], c2w[:3, 3] = R, pos
         poses.append(c2w)
 
-    target = target_extent if target_extent is not None else target_path_length
-    if target is not None and target > 0.0:
-        actual = trajectory_extent(np.asarray(poses))
-        if actual > 1e-9:
-            scale = float(target) / actual
-            origin = poses[0][:3, 3].copy()
-            for pose in poses:
-                pose[:3, 3] = origin + (pose[:3, 3] - origin) * scale
+    if target_extents_xyz is not None:
+        target_vec = np.asarray(target_extents_xyz, dtype=np.float64).reshape(3)
+        actual_vec = np.ptp(np.asarray(poses)[:, :3, 3], axis=0)
+        scale_vec = np.divide(target_vec, actual_vec, out=np.ones(3), where=actual_vec > 1e-9)
+        origin = poses[0][:3, 3].copy()
+        for pose in poses:
+            pose[:3, 3] = origin + (pose[:3, 3] - origin) * scale_vec
+    else:
+        target = target_extent if target_extent is not None else target_path_length
+        if target is not None and target > 0.0:
+            actual = trajectory_extent(np.asarray(poses))
+            if actual > 1e-9:
+                scale = float(target) / actual
+                origin = poses[0][:3, 3].copy()
+                for pose in poses:
+                    pose[:3, 3] = origin + (pose[:3, 3] - origin) * scale
     return poses
 
 
@@ -125,7 +134,7 @@ def trajectory_for_preview(
         return ref
     return np.asarray(synthesize_free_trajectory(
         ref[0], len(ref), motion=motion, speed=speed, seed=seed,
-        target_extent=trajectory_extent(ref)))
+        target_extents_xyz=np.ptp(ref[:, :3, 3], axis=0)))
 
 
 def render_trajectory_preview(poses: np.ndarray, output: str | Path, title: str) -> None:

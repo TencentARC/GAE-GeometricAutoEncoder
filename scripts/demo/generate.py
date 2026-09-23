@@ -261,6 +261,9 @@ def main() -> int:
                 target = 0.0
             if target > 0.0:
                 env["FREE_ROLLOUT_TARGET_EXTENT"] = str(target)
+                env["FREE_ROLLOUT_TARGET_EXTENTS_XYZ"] = ",".join(
+                    f"{float(v):.9g}" for v in np.ptp(ref[:, :3, 3], axis=0)
+                )
                 print(
                     f"[generate] synthetic trajectory diameter: {target:.4f}m "
                     f"from {trajectory_reference_path} ({len(ref)} views)",

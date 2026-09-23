@@ -116,7 +116,7 @@ def main() -> None:
                          ("Spiral", "spiral"), ("Drive", "drive")):
         paths[name] = np.asarray(synthesize_free_trajectory(
             anchor, n, motion=motion, speed=args.speed,
-            yaw_deg=args.yaw_deg, pitch_deg=args.pitch_deg, seed=args.seed, target_extent=trajectory_extent(gt[:n])))
+            yaw_deg=args.yaw_deg, pitch_deg=args.pitch_deg, seed=args.seed, target_extents_xyz=np.ptp(gt[:n, :3, 3], axis=0)))
 
     for name, pose in paths.items():
         pos = pose[:, :3, 3]

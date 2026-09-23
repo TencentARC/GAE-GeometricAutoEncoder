@@ -1130,10 +1130,18 @@ def _synthesize_free_trajectory(
         target = float(target_raw) if target_raw else None
     except ValueError:
         target = None
+    ext_raw = os.environ.get("FREE_ROLLOUT_TARGET_EXTENTS_XYZ", "")
+    try:
+        target_extents = np.asarray([float(v) for v in ext_raw.split(",")], dtype=np.float64) if ext_raw else None
+        if target_extents is not None and target_extents.shape != (3,):
+            target_extents = None
+    except ValueError:
+        target_extents = None
     return synthesize_free_trajectory(
         anchor_c2w, n, motion=motion, speed=speed, yaw_deg=yaw_deg,
         pitch_deg=pitch_deg, fwd_sign=fwd_sign, seed=seed,
         target_extent=target,
+        target_extents_xyz=target_extents,
     )
 
 def _save_mp4(frames_rgb: list, path: str, fps: int = 4):
