@@ -37,6 +37,7 @@ dependencies = [
     "addict",
     "e3nn",
     "numpy",
+    "matplotlib",
     "pyarrow",
     "orjson",
     "webdataset",

@@ -73,17 +73,17 @@ T2I_EXAMPLES = _t2i_examples()
 
 def _vae_video_examples() -> list[list[str]]:
     path = ROOT / "examples" / "recon_videos"
-    # Representative real clips from the d64 step-0018500 evaluation sweep.
-    # They are the exact *_gt.mp4 inputs used by the reconstruction benchmark.
+    # Representative real clips from the d64 step-0018500 evaluation sweep,
+    # renamed by scene content for a readable reconstruction gallery.
     names = (
-        "sweden_iv6_001_gt.mp4",
-        "sweden_iv6_002_gt.mp4",
-        "worldlabs_043_gt.mp4",
-        "pexels_iv3_017_gt.mp4",
-        "pexels_iv3_028_gt.mp4",
-        "re10k_iv3_005_gt.mp4",
-        "scannetpp_iv3_014_gt.mp4",
-        "dl3dv_008_gt.mp4",
+        "historic_courtyard.mp4",
+        "historic_fireplace.mp4",
+        "cathedral_interior.mp4",
+        "autumn_waterfall.mp4",
+        "offroad_vehicle.mp4",
+        "bathroom_hallway.mp4",
+        "office_shelf.mp4",
+        "airport_luggage_vehicle.mp4",
     )
     return [[str(path / name)] for name in names if (path / name).is_file()]
 

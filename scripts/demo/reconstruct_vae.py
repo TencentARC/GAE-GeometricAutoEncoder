@@ -12,11 +12,22 @@ import imageio.v3 as iio
 from gae import GAE
 
 
-def _save_depth(depth: torch.Tensor, path: Path) -> None:
+def _depth_to_color(depth: torch.Tensor) -> np.ndarray:
+    """Render depth with the project's viridis visualization convention."""
+    import matplotlib.cm as cm
+
     arr = depth.detach().float().cpu().squeeze().numpy()
-    lo, hi = np.nanpercentile(arr, [1.0, 99.0])
-    vis = np.clip((arr - lo) / max(hi - lo, 1e-6), 0.0, 1.0)
-    Image.fromarray((vis * 255.0 + 0.5).astype(np.uint8)).save(path)
+    finite = np.isfinite(arr)
+    if not finite.any():
+        return np.zeros((*arr.shape, 3), dtype=np.uint8)
+    lo, hi = float(arr[finite].min()), float(arr[finite].max())
+    if hi - lo > 1e-6:
+        norm = (arr - lo) / (hi - lo)
+    else:
+        norm = np.zeros_like(arr)
+    norm = np.nan_to_num(norm, nan=0.0, posinf=1.0, neginf=0.0)
+    colored = cm.viridis(np.clip(norm, 0.0, 1.0))[..., :3]
+    return (colored * 255.0 + 0.5).astype(np.uint8)
 
 
 def _read_input(path: Path, size: tuple[int, int]) -> tuple[np.ndarray, float]:
@@ -98,10 +109,7 @@ def main() -> None:
                 raise RuntimeError(f"unexpected depth reconstruction shape: {tuple(depth.shape)}")
             depth_frames = []
             for frame in depth:
-                arr = frame.detach().float().cpu().squeeze().numpy()
-                lo, hi = np.nanpercentile(arr, [1.0, 99.0])
-                vis = np.clip((arr - lo) / max(hi - lo, 1e-6), 0.0, 1.0)
-                depth_frames.append((vis * 255.0 + 0.5).astype(np.uint8))
+                depth_frames.append(_depth_to_color(frame))
             if len(depth_frames) == 1:
                 Image.fromarray(depth_frames[0]).save(out_dir / "depth_recon.png")
             else:

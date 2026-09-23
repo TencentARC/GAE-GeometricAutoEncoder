@@ -7,7 +7,7 @@
 #
 # Options:
 #   --size {64|128}       checkpoint pair (default: 64)
-#   --task {i2v|t2i|all}  which demos to run (default: all)
+#   --task {i2v|t2i|recon|all}  which demos to run (default: all)
 #   --ckpt-dir DIR        weight directory (default: ckpts)
 #   --output DIR          results root (default: results/demo)
 #   --smoke               17 views, 25 steps
@@ -58,8 +58,8 @@ done
 
 [[ "$SIZE" == "64" || "$SIZE" == "128" ]] || die "--size must be 64 or 128"
 [[ "$T2I_NUM_IMAGES" =~ ^[1-9][0-9]*$ ]] || die "--num-images must be a positive integer"
-[[ "$TASK" == "i2v" || "$TASK" == "t2i" || "$TASK" == "all" ]] \
-  || die "--task must be i2v, t2i, or all"
+[[ "$TASK" == "i2v" || "$TASK" == "t2i" || "$TASK" == "recon" || "$TASK" == "all" ]] \
+  || die "--task must be i2v, t2i, recon, or all"
 
 HF_REPO="${GAE_HF_REPO:-TencentARC/GAE-D64-1B}"
 
@@ -193,9 +193,25 @@ run_t2i() {
     --guidance "$T2I_GUIDANCE" --ig-scale "$T2I_IG_SCALE"
 }
 
+run_recon() {
+  shopt -s nullglob
+  local videos=(examples/recon_videos/*.mp4)
+  [[ ${#videos[@]} -gt 0 ]] || die "no examples/recon_videos/*.mp4"
+  echo "[run_demo] VAE reconstruction: ${#videos[@]} scene video(s), GAE-${SIZE}"
+  local video name
+  for video in "${videos[@]}"; do
+    name="$(basename "$video" .mp4)"
+    echo "[run_demo] --- $name ---"
+    run python scripts/demo/reconstruct_vae.py \
+      --video "$video" --hf-repo "$HF_REPO" \
+      --cache-dir "$CKPT_DIR" --output "$OUT/recon"
+  done
+}
+
 case "$TASK" in
   i2v) run_i2v ;;
   t2i) run_t2i ;;
+  recon) run_recon ;;
   all) run_i2v; run_t2i ;;
 esac
 

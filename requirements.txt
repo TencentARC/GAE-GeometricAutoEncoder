@@ -35,6 +35,7 @@ plyfile
 addict
 e3nn
 numpy
+matplotlib
 
 # Dataset preparation / paper training recipes
 pyarrow
