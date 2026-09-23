@@ -339,6 +339,33 @@ On network filesystems, run `python scripts/data/build_dataset_index.py --config
 configs/gae_64.yaml` once beforehand to pre-build the loader index caches so rank0
 does not block `torchrun` on a cold scan (idempotent, safe to re-run).
 
+### Test VAE reconstruction
+
+Use the released codec through the public `GAE` API. The command below downloads
+the codec and its geometry dependencies from Hugging Face, reconstructs every
+image in `examples/scenes/`, and writes `rgb_recon.png` plus `depth_recon.png`
+for each scene:
+
+```bash
+python scripts/demo/reconstruct_vae.py \
+  --hf-repo TencentARC/GAE-D64-1B \
+  --cache-dir ckpts \
+  --all-examples \
+  --output results/vae_recon
+```
+
+To test one image:
+
+```bash
+python scripts/demo/reconstruct_vae.py \
+  --image examples/scenes/bedroom.jpg \
+  --output results/vae_recon
+```
+
+This is a codec reconstruction test: the input image is encoded to the
+posterior mean and decoded back to RGB/depth. It does not run the Flow/DiT
+sampler.
+
 ### Evaluate codec reconstruction and latent properties
 
 ```bash

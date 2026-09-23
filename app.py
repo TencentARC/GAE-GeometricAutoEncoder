@@ -209,7 +209,10 @@ def generate_i2v(
     depth_video = _latest(run_dir, ("_depth.mp4",))
     path_preview = _latest(run_dir, ("_trajectory.png",))
     depth = _latest(run_dir, ("_depth.png",))
-    pointcloud = _latest(run_dir, ("_pointcloud.ply",))
+    # I2V must expose the geometry decoded from the predicted latent.  The
+    # evaluator also writes regen_from_video_pointcloud.ply; never return that
+    # auxiliary reconstruction as the primary prediction.
+    pointcloud = _latest(run_dir, ("_pred_pointcloud.ply",))
     if video is None:
         raise gr.Error("Generation completed but no MP4 was produced.")
     if uses_bundled_poses:
