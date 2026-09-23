@@ -183,8 +183,14 @@ the `t2i` co-train branch). Guidance defaults to internal guidance (`--guidance 
 
 This repository includes a Gradio Space app in [`app.py`](app.py). It has two tabs:
 
-- **Image → camera-controlled video**: uses the images, prompts, and matching camera poses in `examples/scenes/`; uploaded images use the selectable synthetic trajectories.
+- **Image → camera-controlled video**: uses the images, prompts, and matching camera poses in `examples/scenes/`; uploaded images default to a shipped example pose path, with synthetic trajectories available as alternatives.
 - **Text → image**: uses the prompts in `examples/t2i_prompts.txt` and decodes depth plus a point cloud alongside the generated image.
+
+For uploaded images, the default camera option uses the shipped
+`forest_lake_trail_poses.npz` example path (and its metric translation scale).
+Repository scene examples automatically use their matching `*_poses.npz` file.
+The synthetic Wander/Orbit/Spiral/Drive paths remain available as explicit
+alternatives.
 
 To deploy it, create a new Gradio Space and upload/push this repository. The Space downloads `TencentARC/GAE-D64-1B` on the first request. A GPU-backed Space is recommended; start with 17 views and 25 sampling steps, then increase to 81 views for the full camera-controlled clip.
 

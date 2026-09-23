@@ -27,12 +27,17 @@ CKPT_DIR = Path(os.environ.get("GAE_SPACE_CKPT_DIR", "/tmp/gae-space-ckpts"))
 OUTPUT_ROOT = Path(os.environ.get("GAE_SPACE_OUTPUT_DIR", "/tmp/gae-space-results"))
 
 TRAJECTORIES = [
+    ("Example camera poses — repository scale (recommended)", "example"),
     ("Wander — gentle turn-dominant motion", "wander"),
     ("Orbit — arc around the scene", "orbit"),
     ("Spiral — rising corkscrew", "spiral"),
     ("Drive — forward camera move", "drive"),
 ]
 VIEW_CHOICES = [17, 33, 81]
+# Uploaded images do not have a sibling *_poses.npz.  Use a shipped, moving
+# 81-frame path as the fallback so the default trajectory has the same metric
+# scale as a repository example instead of the nearly-static synthetic wander.
+DEFAULT_EXAMPLE_POSES = ROOT / "examples" / "scenes" / "forest_lake_trail_poses.npz"
 
 
 def _scene_examples() -> list[list[str]]:
@@ -40,7 +45,7 @@ def _scene_examples() -> list[list[str]]:
     for image in sorted((ROOT / "examples" / "scenes").glob("*.jpg")):
         prompt_file = image.with_suffix(".txt")
         if prompt_file.is_file():
-            rows.append([str(image), prompt_file.read_text(encoding="utf-8").strip(), "wander"])
+            rows.append([str(image), prompt_file.read_text(encoding="utf-8").strip(), "example"])
     return rows
 
 
@@ -142,9 +147,21 @@ def generate_i2v(
     # Bundled scene examples include matching camera poses. Uploaded images use
     # the same synthetic trajectories as the command-line demo.
     pose_file = Path(image).with_name(f"{Path(image).stem}_poses.npz")
+    # Gradio's uploaded file is usually copied to a temporary path, so first
+    # try the matching pose in the repository before falling back to the
+    # canonical example trajectory.
+    if not pose_file.is_file():
+        repo_pose = ROOT / "examples" / "scenes" / f"{Path(image).stem}_poses.npz"
+        pose_file = repo_pose if repo_pose.is_file() else pose_file
     uses_bundled_poses = pose_file.is_file()
-    if not uses_bundled_poses:
+    uses_example_poses = False
+    if not uses_bundled_poses and trajectory == "example" and DEFAULT_EXAMPLE_POSES.is_file():
+        pose_file = DEFAULT_EXAMPLE_POSES
+        uses_example_poses = True
+    if not uses_bundled_poses and not uses_example_poses:
         command += ["--free-rollout", "--trajectory", str(trajectory)]
+    elif uses_bundled_poses or uses_example_poses:
+        command += ["--poses", str(pose_file)]
     _, elapsed = _run(command, run_dir, timeout=max(1800, _duration_i2v(views, steps) * 2))
     video = _latest(run_dir, (".mp4",))
     path_preview = _latest(run_dir, ("_trajectory.png",))
@@ -152,7 +169,12 @@ def generate_i2v(
     pointcloud = _latest(run_dir, ("_pointcloud.ply",))
     if video is None:
         raise gr.Error("Generation completed but no MP4 was produced.")
-    mode = "bundled camera poses" if uses_bundled_poses else f"synthetic {trajectory} trajectory"
+    if uses_bundled_poses:
+        mode = "matching repository camera poses"
+    elif uses_example_poses:
+        mode = f"canonical example camera poses ({pose_file.stem})"
+    else:
+        mode = f"synthetic {trajectory} trajectory"
     status = (
         f"GAE-64 · {views} views · {steps} Euler steps · seed {seed} · {mode} · "
         f"{elapsed:.1f}s\n\n[Download the full run log](file={run_dir / 'space_run.log'})"
@@ -212,7 +234,7 @@ from this repository's `examples/` directory and use the released
                     with gr.Column(scale=1):
                         i2v_image = gr.Image(label="Input image", type="filepath", sources=["upload", "clipboard"], height=300)
                         i2v_prompt = gr.Textbox(label="Scene description", lines=4, placeholder="Describe the scene…")
-                        i2v_trajectory = gr.Dropdown(label="Camera trajectory for uploaded images", choices=TRAJECTORIES, value="wander")
+                        i2v_trajectory = gr.Dropdown(label="Camera trajectory for uploaded images", choices=TRAJECTORIES, value="example")
                         i2v_run = gr.Button("Generate video", variant="primary")
                     with gr.Column(scale=1):
                         i2v_video = gr.Video(label="Generated video", autoplay=True, loop=True, height=300)
