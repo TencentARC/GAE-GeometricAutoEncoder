@@ -172,26 +172,29 @@ def render_trajectory_preview(poses: np.ndarray, output: str | Path, title: str)
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 
-    pos = np.asarray(poses)[:, :3, 3]
-    fwd = -np.asarray(poses)[:, :3, 2]
-    fig, (ax_top, ax_side) = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
-    ax_top.plot(pos[:, 0], pos[:, 2], color="#1a73e8", lw=2.2)
-    ax_top.scatter(pos[0, 0], pos[0, 2], c="#34a853", s=55, label="start")
-    ax_top.scatter(pos[-1, 0], pos[-1, 2], c="#ea4335", s=55, label="end")
-    stride = max(1, len(pos) // 10)
-    scale = max(float(np.ptp(pos[:, 0])), float(np.ptp(pos[:, 2])), 1e-3) * 0.12
-    ax_top.quiver(pos[::stride, 0], pos[::stride, 2], fwd[::stride, 0], fwd[::stride, 2],
-                  color="#1a73e8", scale_units="xy", scale=1.0 / scale, width=0.003)
-    ax_top.set_title("Top view (world x / z)")
-    ax_top.set_xlabel("world x"); ax_top.set_ylabel("world z (depth)")
-    ax_top.set_aspect("equal", adjustable="box"); ax_top.grid(alpha=0.25); ax_top.legend()
-    ax_side.plot(pos[:, 2], pos[:, 1], color="#a142f4", lw=2.2)
-    ax_side.scatter(pos[0, 2], pos[0, 1], c="#34a853", s=55, label="start")
-    ax_side.scatter(pos[-1, 2], pos[-1, 1], c="#ea4335", s=55, label="end")
-    ax_side.set_title("Side view (world z / y)")
-    ax_side.set_xlabel("world z (depth)"); ax_side.set_ylabel("world y (up)")
-    ax_side.grid(alpha=0.25); ax_side.legend()
-    fig.suptitle(title, fontsize=14)
+    poses = np.asarray(poses, dtype=np.float64)
+    pos = poses[:, :3, 3]
+    fwd = -poses[:, :3, 2]
+    fig = plt.figure(figsize=(8, 7), constrained_layout=True)
+    ax = fig.add_subplot(111, projection="3d")
+    ax.plot(pos[:, 0], pos[:, 2], pos[:, 1], color="#1a73e8", lw=2.4)
+    ax.scatter(*[pos[0, i] for i in (0, 2, 1)], c="#34a853", s=65, label="start")
+    ax.scatter(*[pos[-1, i] for i in (0, 2, 1)], c="#ea4335", s=65, label="end")
+    stride = max(1, len(pos) // 12)
+    span = max(float(np.ptp(pos, axis=0).max()), 1e-3)
+    arrow = span * 0.12
+    for i in range(0, len(pos), stride):
+        ax.quiver(pos[i, 0], pos[i, 2], pos[i, 1],
+                  fwd[i, 0], fwd[i, 2], fwd[i, 1],
+                  length=arrow, normalize=True, color="#e8710a", alpha=0.8,
+                  arrow_length_ratio=0.25)
+    ax.set_xlabel("world x")
+    ax.set_ylabel("world z (depth)")
+    ax.set_zlabel("world y (up)")
+    ax.set_title(f"3D camera pose trajectory\n{title}")
+    ax.legend(loc="best")
+    ax.grid(alpha=0.25)
     fig.savefig(output, dpi=160)
     plt.close(fig)
