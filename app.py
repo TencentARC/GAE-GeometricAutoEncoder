@@ -77,8 +77,6 @@ def _vae_video_examples() -> list[list[str]]:
     # renamed by scene content for a readable reconstruction gallery.
     names = (
         "historic_courtyard.mp4",
-        "historic_fireplace.mp4",
-        "cathedral_interior.mp4",
         "autumn_waterfall.mp4",
         "offroad_vehicle.mp4",
         "bathroom_hallway.mp4",

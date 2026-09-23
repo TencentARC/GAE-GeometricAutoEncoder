@@ -380,7 +380,7 @@ Use the released codec through the public `GAE` API. The command below downloads
 the codec and its geometry dependencies from Hugging Face, reconstructs every
 image in `examples/scenes/`, and writes `rgb_recon.png`, `depth_recon.png`, and
 `recon_pointcloud.ply` for each scene. The same script accepts an RGB video and
-writes reconstructed RGB/depth MP4 files plus a PLY point cloud; the Gradio VAE tab includes eight named representative
+writes reconstructed RGB/depth MP4 files plus a PLY point cloud; the Gradio VAE tab includes six named representative
 `d64 step-0018500` evaluation inputs from `examples/recon_videos/`.
 
 ```bash
