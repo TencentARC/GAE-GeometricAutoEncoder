@@ -40,7 +40,7 @@
 https://github.com/user-attachments/assets/771079df-4812-4351-868f-98da9c0969f9
 
 <p align="center">
-  GAE teaser · 1:32
+  GAE teaser · 1:32 · 720p
   &ensp;·&ensp;
   <a href="https://jiah-cloud.github.io/GAE.github.io/#overview-video">Watch in 1080p on the project page</a>
 </p>
