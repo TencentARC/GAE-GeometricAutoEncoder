@@ -37,7 +37,7 @@
   <b>Camera-controlled video and 3D geometry, decoded from one shared latent.</b>
 </p>
 
-https://github.com/user-attachments/assets/faff7b19-5535-4ca4-8d23-14afae22a3a3
+<video src="https://github.com/user-attachments/assets/faff7b19-5535-4ca4-8d23-14afae22a3a3" controls muted width="100%"></video>
 
 GAE puts the 3D inductive bias into the *generated state itself*. Instead of
 encoding a frame as an image and adding geometry from outside the latent, it
