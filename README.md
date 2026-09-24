@@ -178,10 +178,6 @@ python scripts/demo/render_progressive_ply.py \
   results/demo/i2v/forest_lake_trail/scannetpp/000_pred_pointcloud.ply
 ```
 
-The renderer uses the repository defaults for full ray-map resolution, sky and
-depth-edge filtering, visualization voxel merging, camera offset/smoothing,
-and video timing. Override an individual value only when needed.
-
 Use `--no-progressive-ply` on `run_demo.sh` to skip this post-processing step.
 For dataset-scale generation metrics (FVD / FID / 3D-consistency / MEt3R) see
 [Training & evaluation](#-training--evaluation) below.
