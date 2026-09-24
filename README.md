@@ -7,6 +7,8 @@
   <a href="https://www.youtube.com/watch?v=DpPD85IK-Ko"><img src="https://img.shields.io/badge/YouTube-Video-FF0000?logo=youtube&amp;logoColor=white" alt="YouTube Video"></a>
 </p>
 
+🤗 If you find GAE useful, please consider giving this repo a ⭐. Your support helps us share and improve the project. Thank you!
+
 <p align="center">
 <a href="https://github.com/jiah-cloud"><b>Jiahao Lu</b></a><sup>1*</sup> &ensp;
 <a href="https://github.com/TencentARC/GAE-GeometricAutoEncoder"><b>Minghao Yin</b></a><sup>2,3*</sup> &ensp;
