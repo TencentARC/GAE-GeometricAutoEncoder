@@ -168,7 +168,7 @@ training:
 
   # Auxiliary RGB loss on decoded latents; off for the paper configuration.
   rgb_loss_weight: 0.0
-  rgb_loss_t_max: 0.4
+  rgb_loss_t_max: 0.8
   rgb_loss_max_views: 8
   rgb_loss_start_step: 0
 
