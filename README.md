@@ -158,6 +158,31 @@ python scripts/demo/generate.py \
 
 Weights are fetched from Hugging Face on first run (cached under `ckpts/`).
 This writes the generated MP4, trajectory visualization and `.ply` point cloud.
+When running the repository demo, `run_demo.sh --task i2v` also writes a
+cumulative progressive point-cloud video after each scene finishes. The
+intermediate geometry sidecars are kept under the scene output directory:
+
+```bash
+bash scripts/demo/run_demo.sh --task i2v --smoke
+# results/demo/i2v/<scene>/<scene>_progressive.mp4
+```
+
+To render an existing prediction manually, pass its generated
+`*_pred_pointcloud.ply`; the adapter resolves the matching `*_poses.npz` and
+`*_geom.npz` files automatically. The prediction PLY is read at its original
+ray-map resolution (`--point-stride 1`); filtering and voxel merging below
+only affect the visualization video, not the source PLY:
+
+```bash
+python scripts/demo/render_progressive_ply.py \
+  results/demo/i2v/forest_lake_trail/scannetpp/000_pred_pointcloud.ply
+```
+
+The renderer uses the repository defaults for full ray-map resolution, sky and
+depth-edge filtering, visualization voxel merging, camera offset/smoothing,
+and video timing. Override an individual value only when needed.
+
+Use `--no-progressive-ply` on `run_demo.sh` to skip this post-processing step.
 For dataset-scale generation metrics (FVD / FID / 3D-consistency / MEt3R) see
 [Training & evaluation](#-training--evaluation) below.
 

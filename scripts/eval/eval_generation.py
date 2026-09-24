@@ -808,10 +808,9 @@ def _merge_overlap_aligned_pointclouds(
 
     xyz = np.concatenate(acc_xyz, axis=0)
     rgb = np.concatenate(acc_rgb, axis=0)
-    max_pts = 5_000_000
-    if xyz.shape[0] > max_pts:
-        idx = np.random.choice(xyz.shape[0], max_pts, replace=False)
-        xyz, rgb = xyz[idx], rgb[idx]
+    # Preserve the concatenated per-view order. Randomly truncating a long
+    # rollout here prevents downstream progressive renders from recovering
+    # which frame each point came from.
     return xyz, rgb, residuals
 
 
@@ -993,10 +992,9 @@ def _scene_pointcloud_from_dpt(
     )
     xyz = np.concatenate([v[0] for v in view_pcs], axis=0)
     rgb = np.concatenate([v[1] for v in view_pcs], axis=0)
-    max_pts = 5_000_000
-    if xyz.shape[0] > max_pts:
-        idx = np.random.choice(xyz.shape[0], max_pts, replace=False)
-        xyz, rgb = xyz[idx], rgb[idx]
+    # Keep every valid ray-map sample. In particular, an 81-view full-stride
+    # cloud exceeds the former 5M-point cap; random capping also destroys its
+    # frame-concatenated ordering required by progressive visualization.
     return xyz, rgb
 
 

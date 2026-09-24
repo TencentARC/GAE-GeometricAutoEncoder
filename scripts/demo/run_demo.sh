@@ -16,6 +16,7 @@
 #   --guidance MODE       T2I: none|cfg|ig|cfg_ig (default: ig)
 #   --ig-scale N          T2I internal-guidance scale (default: 2.0)
 #   --num-images N        T2I images per prompt (default: 3)
+#   --no-progressive-ply   skip cumulative point-cloud video after I2V
 #   -h, --help
 #
 # Env: GAE_HF_REPO (default TencentARC/GAE-D64-1B), HF_TOKEN, PYTHON, GAE_VENV.
@@ -33,6 +34,7 @@ SKIP_DOWNLOAD=0
 T2I_GUIDANCE=ig
 T2I_IG_SCALE=2.0
 T2I_NUM_IMAGES=3
+PROGRESSIVE_PLY=1
 EXTRA=()
 
 die() { echo "[run_demo] error: $*" >&2; exit 1; }
@@ -50,6 +52,7 @@ while [[ $# -gt 0 ]]; do
     --guidance)       T2I_GUIDANCE="$2"; shift 2 ;;
     --ig-scale)       T2I_IG_SCALE="$2"; shift 2 ;;
     --num-images)     T2I_NUM_IMAGES="$2"; shift 2 ;;
+    --no-progressive-ply) PROGRESSIVE_PLY=0; shift ;;
     -h|--help)        usage 0 ;;
     --)               shift; EXTRA=("$@"); break ;;
     *)                die "unknown option '$1' (use --help)" ;;
@@ -173,12 +176,37 @@ run_i2v() {
     prompt="examples/scenes/${name}.txt"
     [[ -f "$prompt" ]] || die "missing $prompt"
     echo "[run_demo] --- $name ---"
+    local generate_extra=()
+    [[ "$PROGRESSIVE_PLY" == "1" ]] && generate_extra+=(--dump-geometry)
     run python scripts/demo/generate.py \
       --image "$img" --prompt-file "$prompt" \
       --flow-ckpt "$FLOW_CKPT" --codec-ckpt "$CODEC_CKPT" \
       --config "$FLOW_CFG" --codec-config "$CODEC_CFG" \
       --output "$OUT/i2v/${name}" \
-      "${I2V_FLAGS[@]}" "${EXTRA[@]}"
+      --pc-stride 1 \
+      "${I2V_FLAGS[@]}" "${generate_extra[@]}" "${EXTRA[@]}"
+
+    if [[ "$PROGRESSIVE_PLY" == "1" ]]; then
+      # generate.py/eval_generation.py writes the predicted PLY, recovered
+      # poses, and (with --dump-geometry) gen_depth into the same scene tree.
+      # The adapter resolves those sidecars automatically and supports the
+      # ASCII PLY emitted by this repository.
+      local scene_out="$OUT/i2v/${name}"
+      local pred_ply
+      pred_ply="$(find "$scene_out" -type f -name '*_pred_pointcloud.ply' \
+        ! -name '*_unaligned.ply' -print -quit 2>/dev/null || true)"
+      if [[ -n "$pred_ply" ]]; then
+        echo "[run_demo] progressive point-cloud video: $pred_ply"
+        run python scripts/demo/render_progressive_ply.py "$pred_ply" \
+          --output-prefix "$scene_out/${name}_progressive" \
+          --depth-edge-filter --depth-edge-threshold 0.05 \
+          --point-budget 0 --point-size 1 --render-voxel-size 0.001 \
+          --camera-back-offset 0.2 \
+          --hold-frames 1
+      else
+        echo "[run_demo] warning: no *_pred_pointcloud.ply found under $scene_out; skip progressive video" >&2
+      fi
+    fi
   done
 }
 
