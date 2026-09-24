@@ -34,6 +34,21 @@
 </p>
 
 <p align="center">
+  <b>Camera-controlled video and 3D geometry, decoded from one shared latent.</b>
+</p>
+
+<p align="center">
+  <a href="https://jiah-cloud.github.io/GAE.github.io/assets/overview/GAE-teaser-final-1080p.mp4">
+    <img src="https://jiah-cloud.github.io/GAE.github.io/assets/overview/GAE-teaser-poster.jpg" alt="Watch the GAE teaser video: generated appearance and 3D geometry" width="100%"/>
+  </a>
+</p>
+<p align="center">
+  <a href="https://jiah-cloud.github.io/GAE.github.io/assets/overview/GAE-teaser-final-1080p.mp4"><b>▶ Watch the teaser · 1:32 · 1080p</b></a>
+  &ensp;·&ensp;
+  <a href="https://jiah-cloud.github.io/GAE.github.io/#overview-video">Watch on the project page</a>
+</p>
+
+<p align="center">
   <img src="assets/gae_teaser.png" alt="GAE teaser" width="100%"/>
 </p>
 
