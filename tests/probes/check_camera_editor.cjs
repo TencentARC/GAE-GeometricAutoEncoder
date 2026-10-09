@@ -94,5 +94,15 @@ props.value=data('new-image');watched();assert.equal(api.getKeyframes().length,1
 for(let i=0;i<4;i++){api.moveDraft({x:i*.1});assert.equal(api.addKeyframe(),true);}
 assert.equal(api.addKeyframe(),false);assert.equal(api.setFinal(),true);assert.equal(api.getKeyframes().length,6);
 api.selectCamera(0);assert.equal(api.editSelected(),false);assert.equal(api.deleteSelected(),false);
+const presetScene=data('preset');
+presetScene.presetPath={keyframes:[
+ {id:'start',role:'start',time:0,x:0,y:0,z:0,yaw:0,pitch:0},
+ {id:'preset-1',role:'end',time:1,x:.4,y:0,z:.8,yaw:12,pitch:0},
+]};
+props.value=presetScene;watched();assert.equal(api.loadPreset(),true);
+assert.equal(api.finalized,true);assert.equal(JSON.parse(api.serialize()).keyframes[1].x,.4);
+const presetCanvas=role('scene-view');watched();assert.equal(role('scene-view'),presetCanvas);
+assert.equal(api.getKeyframes()[1].x,.4);
+props.value=data('no-preset');watched();assert.equal(api.loadPreset(),false);
 props.value=null;watched();assert.equal(api.ready,false);assert.throws(()=>api.serialize());api.dispose();
 console.log('PASS: fixed snapshots; explicit Final gate; navigation isolation; edit/cancel/save; End deletion/reopening; image reset; capacity; 17/33/81/161-frame JS/Python parity');

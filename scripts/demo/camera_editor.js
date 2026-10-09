@@ -13,6 +13,7 @@
     const cross = (a,b) => [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
     const unit = a => mul(a,1/Math.max(1e-9,Math.sqrt(dot(a,a))));
     let cloud=null, ready=false, disposed=false, generating=false, error=null, ui=null, controller=null;
+    let sceneSignature=null;
     let sceneRenderer=null, finderRenderer=null, observer=null, renderRequest=0;
     let cameras=[], draft=null, draftBeforeEdit=null, focusBeforeEdit=null, cameraBeforeEdit=null, finalized=false, selected=-1, editing=null, nextId=1;
     let views=81, playhead=0, playing=false, playbackRequest=0, playbackCamera=null;
@@ -58,6 +59,17 @@
         const button=parent?.querySelector?.('button') || parent;
         const enabled=canGenerate()&&!generating;
         if(button && button.disabled===enabled) button.disabled=!enabled;
+        const presetParent=document.getElementById?.('gae-load-preset');
+        const presetButton=presetParent?.querySelector?.('button') || presetParent;
+        if(presetButton) presetButton.disabled=!ready || !Array.isArray(cloud?.presetPath?.keyframes);
+    }
+    function loadPreset() {
+        const preset=cloud?.presetPath?.keyframes;
+        if(!ready || !Array.isArray(preset) || preset.length<2 || preset.length>MAX_CAMERAS) return false;
+        stopPlayback();
+        cameras=preset.map((camera,index)=>({...camera,id:camera.id||`preset-${index}`}));
+        draft=copy(cameras.at(-1));finalized=true;selected=-1;editing=null;nextId=cameras.length;playhead=0;
+        focusPoint=[0,0,cloud.pivotDepth];rebuildCards();updateUI();scheduleRender();return true;
     }
     function stopPlayback() {
         playing=false;playbackCamera=null;cancelAnimationFrame(playbackRequest);playbackRequest=0;
@@ -499,7 +511,7 @@
             else moveDraft({[axis]:draft[axis]+sign*cloud.pivotDepth*(event.shiftKey ? .005 : .02)});
         },{signal});
         canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();ready=false;stopPlayback();updateUI();ui.notice.textContent='Restoring the scene preview…';ui.notice.hidden=false;},{signal});
-        canvas.addEventListener('webglcontextrestored',initialize,{signal});
+        canvas.addEventListener('webglcontextrestored',()=>initialize(true),{signal});
     }
     function scheduleRender() {
         if(disposed || renderRequest) return;
@@ -659,9 +671,16 @@
         sceneRenderer?.dispose();finderRenderer?.dispose();sceneRenderer=null;finderRenderer=null;
         ready=false;
     }
-    function initialize() {
+    function initialize(force=false) {
         if(disposed) return;
         const data=props.value,previousKey=cloud?.imageKey,previousDepth=cloud?.pivotDepth;
+        const nextSignature=data?.imageKey ? [data.imageKey,data.pivotDepth,data.positions?.length,data.colors?.length,
+            data.width,data.height,data.K?.[0]?.[0],data.K?.[1]?.[1]].join('|') : 'empty';
+        // Gradio may notify a custom HTML component more than once for the same
+        // output. Rebuilding here destroys both WebGL contexts and the authored
+        // camera state, which presents as a repeated page refresh.
+        if(!force && ui && nextSignature===sceneSignature) return;
+        sceneSignature=nextSignature;
         cleanup();controller=new AbortController();createUI();error=null;
         if(!data?.imageKey) {
             cloud=null;cameras=[];draft=null;finalized=false;selected=-1;editing=null;
@@ -674,7 +693,8 @@
                 throw new Error('The scene preview is incomplete. Choose the image again.');
             cloud=data;
             if(previousKey!==data.imageKey || previousDepth!==data.pivotDepth || !cameras.length) {
-                cameras=[{id:'start',role:'start',time:0,...zero()}];draft=zero();focusPoint=[0,0,data.pivotDepth];finalized=false;selected=-1;editing=null;nextId=1;playhead=0;
+                cameras=[{id:'start',role:'start',time:0,...zero()}];draft=zero();finalized=false;selected=-1;editing=null;nextId=1;playhead=0;
+                focusPoint=[0,0,data.pivotDepth];
                 orbit={yaw:.28,pitch:.24,distance:1.35,panX:0,panY:0};
             }
             sceneRenderer=createRenderer(ui.sceneCanvas,data);finderRenderer=createRenderer(ui.finderCanvas,data);
@@ -694,7 +714,7 @@
         getKeyframes(){return cameras.map(camera=>({...camera}));},
         getPose(){return pose(activeCamera());}, getPoseAt(time){return pose(sampleAt(time));}, sample(time){return {...sampleAt(time)};},
         setGenerating(value){generating=!!value;generationButton();},
-        canGenerate,moveDraft,dolly,frameCamera,selectCamera,selectTime,addKeyframe,setFinal,editSelected,saveEdit,cancelEdit,deleteSelected,continuePath,togglePlayback,setViews,
+        canGenerate,loadPreset,moveDraft,dolly,frameCamera,selectCamera,selectTime,addKeyframe,setFinal,editSelected,saveEdit,cancelEdit,deleteSelected,continuePath,togglePlayback,setViews,
         reset(){return moveDraft(zero());},render:scheduleRender,
         serialize(){
             if(!this.ready) throw new Error('Choose an image and wait for its scene preview.');

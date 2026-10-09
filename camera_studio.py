@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 import uuid
+from collections import OrderedDict
 from pathlib import Path
 
 try:
@@ -36,6 +37,9 @@ from scripts.demo.trajectory_utils import (
 )
 
 RESIDENT_ENGINE = None  # Set only after service initialization and warmup.
+_SCENE_CACHE: OrderedDict[str, dict] = OrderedDict()
+_SCENE_CACHE_LOCK = threading.Lock()
+_LATEST_SCENE_REQUEST: dict[str, str] = {}
 
 # Measure the actual browser interval, including queueing, transfer and decode.
 PLAYBACK_TIMING_JS = r"""(...args) => {
@@ -191,6 +195,48 @@ def _pose_reference_for_image(image: str | None) -> Path | None:
     return DEFAULT_EXAMPLE_POSES if DEFAULT_EXAMPLE_POSES.is_file() else None
 
 
+def _camera_editor_preset(image: str | None) -> dict | None:
+    """Convert an example's dataset c2w path to editable Studio keyframes."""
+    if not image:
+        return None
+    image_path = Path(image)
+    candidates = [
+        image_path.with_name(f"{image_path.stem}_poses.npz"),
+        ROOT / "examples" / "scenes" / f"{image_path.stem}_poses.npz",
+    ]
+    pose_path = next((path for path in candidates if path.is_file()), None)
+    if pose_path is None:
+        return None
+    try:
+        import numpy as np
+
+        poses = load_reference_poses(pose_path, 81)
+        relative = np.linalg.inv(poses[0]) @ poses
+        indices = np.linspace(0, len(relative) - 1, min(6, len(relative))).round().astype(int)
+        keyframes = []
+        for order, index in enumerate(indices):
+            transform = relative[index]
+            rotation = transform[:3, :3]
+            yaw = float(np.degrees(np.arctan2(rotation[0, 2], rotation[2, 2])))
+            pitch = float(np.degrees(np.arctan2(-rotation[1, 2], rotation[1, 1])))
+            position = transform[:3, 3]
+            role = "start" if order == 0 else "end" if order == len(indices) - 1 else "keyframe"
+            keyframes.append(dict(
+                id="start" if order == 0 else f"preset-{order}",
+                role=role,
+                time=float(index / max(len(relative) - 1, 1)),
+                x=0.0 if order == 0 else float(position[0]),
+                y=0.0 if order == 0 else float(position[1]),
+                z=0.0 if order == 0 else float(position[2]),
+                yaw=0.0 if order == 0 else yaw,
+                pitch=0.0 if order == 0 else pitch,
+            ))
+        return {"source": pose_path.name, "keyframes": keyframes}
+    except (OSError, ValueError, np.linalg.LinAlgError) as exc:
+        print(f"[camera] could not load preset {pose_path}: {exc}", flush=True)
+        return None
+
+
 def preview_i2v_trajectory(image: str | None, trajectory: str, views: int) -> str | None:
     """Render the exact selected input pose path before video generation."""
     reference = _pose_reference_for_image(image)
@@ -221,12 +267,39 @@ def _camera_preview_path(prefix):
     return directory / f"{prefix}-{uuid.uuid4().hex}.png"
 
 
-def prepare_direct_camera(image):
+def _session_key(request: gr.Request) -> str:
+    return request.session_hash or "anonymous"
+
+
+def mark_scene_request(_image, request: gr.Request):
+    """Invalidate any slower scene preparation already running for this tab."""
+    token = uuid.uuid4().hex
+    _LATEST_SCENE_REQUEST[_session_key(request)] = token
+    return token
+
+
+def prepare_direct_camera(image, token, request: gr.Request):
     if not image:
         return None, None
     if RESIDENT_ENGINE is None:
         raise gr.Error("The camera editor requires the resident GPU service.")
-    scene = RESIDENT_ENGINE.prepare_camera_scene(image)
+    from scripts.demo.direct_camera import image_key
+
+    key = image_key(image)
+    with _SCENE_CACHE_LOCK:
+        scene = _SCENE_CACHE.get(key)
+        if scene is not None:
+            _SCENE_CACHE.move_to_end(key)
+    if scene is None:
+        scene = RESIDENT_ENGINE.prepare_camera_scene(image)
+        scene["presetPath"] = _camera_editor_preset(image)
+        with _SCENE_CACHE_LOCK:
+            _SCENE_CACHE[key] = scene
+            _SCENE_CACHE.move_to_end(key)
+            while len(_SCENE_CACHE) > 3:
+                _SCENE_CACHE.popitem(last=False)
+    if _LATEST_SCENE_REQUEST.get(_session_key(request)) != token:
+        return gr.skip(), gr.skip()
     state = {k: scene[k] for k in ("imageKey", "pivotDepth", "K", "preparedImage", "metricScale", "scaleQuantiles")}
     return scene, state
 
@@ -584,11 +657,12 @@ def describe_image(image: str | None):
         yield gr.update()
 
 
-def choose_scene_example(event: gr.SelectData):
+def choose_scene_example(event: gr.SelectData, request: gr.Request):
     index = int(event.index)
     if not 0 <= index < len(I2V_EXAMPLES):
         raise gr.Error("Choose an example image.")
-    return I2V_EXAMPLES[index][0], I2V_EXAMPLES[index][1]
+    token = mark_scene_request(I2V_EXAMPLES[index][0], request)
+    return I2V_EXAMPLES[index][0], I2V_EXAMPLES[index][1], token
 
 
 CSS = """
@@ -623,8 +697,13 @@ Choose an image, place your cameras, and generate a scene in motion.
                             js_on_load=(ROOT / "scripts/demo/camera_editor_loader.js").read_text().replace("__ASSET_ROOT__", str(ROOT / "scripts/demo")),
                             elem_id="gae-camera-editor")
                         i2v_camera_scene = gr.State()
+                        i2v_scene_token = gr.State("")
                         i2v_camera_payload = gr.Textbox(visible=False, value="")
                         i2v_trajectory = gr.State("direct-view")
+                        i2v_load_preset = gr.Button(
+                            "Use example default trajectory",
+                            elem_id="gae-load-preset",
+                        )
                         i2v_run = gr.Button("Generate video", variant="primary", elem_id="gae-generate")
                         with gr.Accordion("Advanced settings", open=False):
                             with gr.Row():
@@ -640,8 +719,10 @@ Choose an image, place your cameras, and generate a scene in motion.
                                     value=[(row[0], Path(row[0]).stem.replace("_", " ").title()) for row in I2V_EXAMPLES],
                                     columns=3, rows=2, height=240, object_fit="cover", preview=False,
                                     label="Example images", show_label=False)
-                                scene_gallery.select(choose_scene_example, inputs=None,
-                                                     outputs=[i2v_image, i2v_prompt], queue=False)
+                                scene_selection = scene_gallery.select(
+                                    choose_scene_example, inputs=None,
+                                    outputs=[i2v_image, i2v_prompt, i2v_scene_token], queue=False,
+                                )
                     with gr.Column(scale=2, min_width=390, elem_id="gae-output-panel"):
                         i2v_progressive = gr.Video(label="Your video · RGB and 3D", autoplay=True, loop=True, height=None, elem_id="gae-paired-result")
                         i2v_status = gr.Markdown()
@@ -658,12 +739,30 @@ Choose an image, place your cameras, and generate a scene in motion.
                                 i2v_cloud = gr.File(label="Sampled scene point cloud (.ply)")
                                 i2v_download = gr.Button("Prepare point-cloud download")
                         i2v_download.click(download_pointcloud, inputs=[i2v_geometry], outputs=[i2v_cloud])
-                i2v_image.change(prepare_direct_camera, inputs=[i2v_image],
-                                 outputs=[i2v_camera_editor, i2v_camera_scene], trigger_mode="always_last")
-                i2v_image.change(describe_image, inputs=[i2v_image], outputs=[i2v_prompt],
-                                 trigger_mode="always_last", concurrency_id="caption")
+                # `.input` runs only for a direct upload/paste. Gallery selection
+                # already supplies its curated prompt, so it must not also start
+                # the streaming captioner and overwrite the prompt repeatedly.
+                direct_scene_request = i2v_image.input(
+                    mark_scene_request, inputs=[i2v_image], outputs=[i2v_scene_token], queue=False,
+                )
+                direct_scene_request.then(
+                    prepare_direct_camera, inputs=[i2v_image, i2v_scene_token],
+                    outputs=[i2v_camera_editor, i2v_camera_scene], trigger_mode="always_last",
+                )
+                i2v_image.input(describe_image, inputs=[i2v_image], outputs=[i2v_prompt],
+                                trigger_mode="always_last", concurrency_id="caption")
+                if I2V_EXAMPLES:
+                    scene_selection.then(
+                        prepare_direct_camera, inputs=[i2v_image, i2v_scene_token],
+                        outputs=[i2v_camera_editor, i2v_camera_scene],
+                        trigger_mode="always_last",
+                    )
                 i2v_views.change(None, inputs=[i2v_views], outputs=[],
                                  js="(v) => { window.gaeCameraEditor?.setViews(v); return []; }")
+                i2v_load_preset.click(
+                    None, inputs=None, outputs=[], queue=False,
+                    js="() => { window.gaeCameraEditor?.loadPreset?.(); return []; }",
+                )
                 generation = i2v_run.click(
                     generate_direct_camera,
                     js=PLAYBACK_TIMING_JS.replace(
